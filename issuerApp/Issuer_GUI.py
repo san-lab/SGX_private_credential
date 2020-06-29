@@ -37,6 +37,7 @@ class App():
     def __init__(self):
         global root
         global Credential_list, credentialSelection, credential_menu
+        global Request_list, requestSelection, request_menu
 
         root = Tk()
         root.geometry('300x500')
@@ -48,47 +49,98 @@ class App():
         ""
         ]
 
+        Request_list = [
+        ""
+        ]
+
         b0 = ttk.Button(
             root, text="Retrieve credential request",
-            command=self.credentialRetrieve)
+            command=self.requestRetrieve)
         b0.grid(row=1, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        requestSelection = StringVar(root)
+        requestSelection.set(Request_list[0]) # default value
+
+        request_menu = OptionMenu(root, requestSelection, *Request_list)
+        request_menu.pack()
+        request_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b1 = ttk.Button(
             root, text="Generate credential",
             command=self.generateCredential)
-        b1.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b1.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         credentialSelection = StringVar(root)
         credentialSelection.set(Credential_list[0]) # default value
 
         credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
         credential_menu.pack()
-        credential_menu.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
+        credential_menu.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
             root, text="Encrypt credential on SGX",
             command=self.encryptOnSgx)
-        b2.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b2.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b3 = ttk.Button(
             root, text="      Ask for a new credential      ",
             command=self.encryptOnSgx)
-        b3.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
 
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=6,sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=7,sticky=S, pady=(10, 0))
 
         root.mainloop()
 
-    def credentialRetrieve(self):
-        print("c")
+    def requestRetrieve(self):
+        global list_waiting_requests
+        global Request_list, requestSelection, request_menu
+
+        requests = {"request": [{"user": "Alice", "type": "credit scoring"}, {"user": "Bob", "type": "credit scoring"}]}
+        requests_dump = json.dumps(requests)
+        request_json = json.loads(requests_dump)
+
+        list_waiting_requests = request_json["request"]
+
+        aux_str = ""
+        usable_ids = list()
+        for i in range (0,len(list_waiting_requests)):
+            request_json = list_waiting_requests[i]
+            new_id = str(i) + ": " + request_json["type"] + " for " + request_json["user"] + "\n"
+            usable_ids.append(new_id)
+            aux_str = aux_str + new_id + "\n"
+
+        if aux_str == "":
+            aux_str = "No requests pending"
+
+        else:
+            requestSelection.set('')
+            request_menu['menu'].delete(0, 'end')
+
+            # Insert list of new options (tk._setit hooks them up to var)
+            count = 0
+            for _id in usable_ids:
+                request_menu['menu'].add_command(label=_id, command=_setit(requestSelection, _id))
+                count = count+1
+
+        mbox.showinfo("Result", aux_str)
+
 
     def generateCredential(self):
         global plain_credential_list
         global Credential_list, credentialSelection, credential_menu
+
+        global list_waiting_requests
+
+        #TODO
+        requestPosition = requestSelection.get()
+        position = int(requestPosition.split(':')[0])
+
+        print("AAAAAA")
+        print(list_waiting_requests[position])# This variable holds the JSON that we will use later on to ask for the credential.
 
         req = requests.get('http://40.120.61.169:8080/issue')
         req_json = req.json()
