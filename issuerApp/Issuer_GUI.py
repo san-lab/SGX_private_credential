@@ -32,7 +32,6 @@ from dotenv import load_dotenv
 import os
 
 
-
 class App():
     def __init__(self):
         global root
@@ -62,7 +61,7 @@ class App():
         requestSelection.set(Request_list[0]) # default value
 
         request_menu = OptionMenu(root, requestSelection, *Request_list)
-        request_menu.pack()
+        #request_menu.pack()
         request_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b1 = ttk.Button(
@@ -74,7 +73,7 @@ class App():
         credentialSelection.set(Credential_list[0]) # default value
 
         credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
-        credential_menu.pack()
+        #credential_menu.pack()
         credential_menu.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
@@ -98,12 +97,16 @@ class App():
     def requestRetrieve(self):
         global list_waiting_requests
         global Request_list, requestSelection, request_menu
+        data = {
+            "jsonrpc": "2.0",
+            "method": "pendingRequests",
+            "id": 1,
+            "params": []
+        }
+        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        pendingRequests_json = pendingRequests.json()
 
-        requests = {"request": [{"user": "Alice", "type": "credit scoring"}, {"user": "Bob", "type": "credit scoring"}]}
-        requests_dump = json.dumps(requests)
-        request_json = json.loads(requests_dump)
-
-        list_waiting_requests = request_json["request"]
+        list_waiting_requests = pendingRequests_json["result"]["request"]
 
         aux_str = ""
         usable_ids = list()

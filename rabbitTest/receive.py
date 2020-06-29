@@ -1,4 +1,5 @@
 import pika
+import json
 
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
@@ -9,6 +10,8 @@ channel.queue_declare(queue='hello')
 
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
+    jsonParsed = (json.loads(body))
+    print(jsonParsed["Credential Request"])
 
 
 channel.basic_consume(
