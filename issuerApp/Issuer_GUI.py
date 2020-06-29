@@ -112,7 +112,7 @@ class App():
         usable_ids = list()
         for i in range (0,len(list_waiting_requests)):
             request_json = list_waiting_requests[i]
-            new_id = str(i) + ": " + request_json["type"] + " for " + request_json["user"] + "\n"
+            new_id = str(i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
 
@@ -138,17 +138,14 @@ class App():
 
         global list_waiting_requests
 
-        #TODO
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
 
-        print("AAAAAA")
-        print(list_waiting_requests[position])# This variable holds the JSON that we will use later on to ask for the credential.
+        credential_request = json.dumps(list_waiting_requests[position])
+        response = requests.get('http://40.120.61.169:8080/issue', data=credential_request)
+        res_json = response.json()
 
-        req = requests.get('http://40.120.61.169:8080/issue')
-        req_json = req.json()
-
-        req_str = json.dumps(req_json)
+        res_str = json.dumps(res_json)
 
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
@@ -156,7 +153,7 @@ class App():
         credentials_file.close()
 
         plain_credential_list = credentials_json["plain_credentials"]
-        plain_credential_list.append(req_str)
+        plain_credential_list.append(res_str)
         credentials_json["plain_credentials"] = plain_credential_list
 
         credentials_file_write = open("./credentials_issuer.json", "w")

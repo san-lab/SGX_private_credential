@@ -1,6 +1,6 @@
 import json
 
-requests = {"request": [{"user": "Alice", "type": "credit scoring", "DID": 342}, {"user": "Bob", "type": "credit scoring", "DID": 265}]}
+requests = {"request": [{"name": "Alice", "type": "credit scoring", "DID": "342"}, {"name": "Bob", "type": "credit scoring", "DID": "265"}]}
 
 def getPendingRequests():
     print (requests )
