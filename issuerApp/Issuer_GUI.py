@@ -37,6 +37,7 @@ class App():
         global root
         global Credential_list, credentialSelection, credential_menu
         global Request_list, requestSelection, request_menu
+        global Response_list, responseSelection, response_menu
 
         root = Tk()
         root.geometry('300x500')
@@ -52,6 +53,11 @@ class App():
         ""
         ]
 
+        Response_list = [
+        ""
+        ]
+
+
         b0 = ttk.Button(
             root, text="Retrieve credential request",
             command=self.requestRetrieve)
@@ -61,7 +67,6 @@ class App():
         requestSelection.set(Request_list[0])  # default value
 
         request_menu = OptionMenu(root, requestSelection, *Request_list)
-        # request_menu.pack()
         request_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b1 = ttk.Button(
@@ -74,7 +79,6 @@ class App():
 
         credential_menu = OptionMenu(
             root, credentialSelection, *Credential_list)
-        # credential_menu.pack()
         credential_menu.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
@@ -82,15 +86,85 @@ class App():
             command=self.encryptOnSgx)
         b2.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        responseSelection = StringVar(root)
+        responseSelection.set(Response_list[0])  # default value
+
+        response_menu = OptionMenu(
+            root, responseSelection, *Response_list)
+        response_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
+
         b3 = ttk.Button(
             root, text="      Send credential to customer     ",
             command=self.sendCredential)
-        b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b3.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=7, sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=8, sticky=S, pady=(10, 0))
+
+        credentials_file = open("./credentials_issuer.json", "r")
+        credentials_str = credentials_file.read()
+        credentials_json = json.loads(credentials_str)
+        credentials_file.close()
+
+        plain_credential_list = credentials_json["plain_credentials"]
+
+        aux_str = ""
+        usable_ids = list()
+        for i in range(0, len(plain_credential_list)):
+            cred = plain_credential_list[i]
+            cred_json = json.loads(cred)
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
+                         " for " + cred_json["Credential"]["Name"] + "\n"
+            usable_ids.append(new_id)
+            aux_str = aux_str + new_id + "\n"
+
+        if aux_str == "":
+            aux_str = "No credentials loaded"
+
+        else:
+            credentialSelection.set('')
+            credential_menu['menu'].delete(0, 'end')
+
+            # Insert list of new options (tk._setit hooks them up to var)
+            count = 0
+            for _id in usable_ids:
+                credential_menu['menu'].add_command(
+                    label=_id, command=_setit(credentialSelection, _id))
+                count = count+1
+
+
+        credentials_file = open("./credentials_issuer.json", "r")
+        credentials_str = credentials_file.read()
+        credentials_json = json.loads(credentials_str)
+        credentials_file.close()
+
+        enc_credential_list = credentials_json["encrypted_credentials"]
+
+        aux_str = ""
+        usable_ids = list()
+        for i in range(0, len(enc_credential_list)):
+            cred = enc_credential_list[i]
+            cred_json = json.loads(cred)
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
+                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
+            usable_ids.append(new_id)
+            aux_str = aux_str + new_id + "\n"
+
+        if aux_str == "":
+            aux_str = "No credentials loaded"
+
+        else:
+            responseSelection.set('')
+            response_menu['menu'].delete(0, 'end')
+
+            # Insert list of new options (tk._setit hooks them up to var)
+            count = 0
+            for _id in usable_ids:
+                response_menu['menu'].add_command(
+                    label=_id, command=_setit(responseSelection, _id))
+                count = count+1
 
         root.mainloop()
 
@@ -161,6 +235,7 @@ class App():
 
         credentials_file_write = open("./credentials_issuer.json", "w")
         credentials_file_write.write(json.dumps(credentials_json))
+        credentials_file_write.close()
 
         aux_str = ""
         usable_ids = list()
@@ -191,6 +266,7 @@ class App():
     def encryptOnSgx(self):
         global credentialSelection
         global plain_credential_list
+        global Response_list, responseSelection, response_menu
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
@@ -211,6 +287,34 @@ class App():
 
         credentials_file_write = open("./credentials_issuer.json", "w")
         credentials_file_write.write(json.dumps(credentials_json))
+        credentials_file_write.close()
+
+        aux_str = ""
+        usable_ids = list()
+        for i in range(0, len(enc_credential_list)):
+            cred = enc_credential_list[i]
+            cred_json = json.loads(cred)
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
+                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
+            usable_ids.append(new_id)
+            aux_str = aux_str + new_id + "\n"
+
+        if aux_str == "":
+            aux_str = "No credentials loaded"
+
+        else:
+            responseSelection.set('')
+            response_menu['menu'].delete(0, 'end')
+
+            # Insert list of new options (tk._setit hooks them up to var)
+            count = 0
+            for _id in usable_ids:
+                response_menu['menu'].add_command(
+                    label=_id, command=_setit(responseSelection, _id))
+                count = count+1
+
+        mbox.showinfo("Result", aux_str)
+
 
         # mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
