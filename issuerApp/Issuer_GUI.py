@@ -58,10 +58,10 @@ class App():
         b0.grid(row=1, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         requestSelection = StringVar(root)
-        requestSelection.set(Request_list[0]) # default value
+        requestSelection.set(Request_list[0])  # default value
 
         request_menu = OptionMenu(root, requestSelection, *Request_list)
-        #request_menu.pack()
+        # request_menu.pack()
         request_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b1 = ttk.Button(
@@ -70,10 +70,11 @@ class App():
         b1.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         credentialSelection = StringVar(root)
-        credentialSelection.set(Credential_list[0]) # default value
+        credentialSelection.set(Credential_list[0])  # default value
 
-        credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
-        #credential_menu.pack()
+        credential_menu = OptionMenu(
+            root, credentialSelection, *Credential_list)
+        # credential_menu.pack()
         credential_menu.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
@@ -82,15 +83,14 @@ class App():
         b2.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b3 = ttk.Button(
-            root, text="      Ask for a new credential      ",
-            command=self.encryptOnSgx)
+            root, text="      Send credential to customer     ",
+            command=self.sendCredential)
         b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
-
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=7,sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=7, sticky=S, pady=(10, 0))
 
         root.mainloop()
 
@@ -103,16 +103,18 @@ class App():
             "id": 1,
             "params": []
         }
-        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        pendingRequests = requests.post(
+            'http://localhost:3000/jsonrpc', data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
 
         list_waiting_requests = pendingRequests_json["result"]["request"]
 
         aux_str = ""
         usable_ids = list()
-        for i in range (0,len(list_waiting_requests)):
+        for i in range(0, len(list_waiting_requests)):
             request_json = list_waiting_requests[i]
-            new_id = str(i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
+            new_id = str(
+                i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
 
@@ -126,11 +128,11 @@ class App():
             # Insert list of new options (tk._setit hooks them up to var)
             count = 0
             for _id in usable_ids:
-                request_menu['menu'].add_command(label=_id, command=_setit(requestSelection, _id))
+                request_menu['menu'].add_command(
+                    label=_id, command=_setit(requestSelection, _id))
                 count = count+1
 
         mbox.showinfo("Result", aux_str)
-
 
     def generateCredential(self):
         global plain_credential_list
@@ -142,7 +144,8 @@ class App():
         position = int(requestPosition.split(':')[0])
 
         credential_request = json.dumps(list_waiting_requests[position])
-        response = requests.get('http://40.120.61.169:8080/issue', data=credential_request)
+        response = requests.get(
+            'http://40.120.61.169:8080/issue', data=credential_request)
         res_json = response.json()
 
         res_str = json.dumps(res_json)
@@ -161,10 +164,11 @@ class App():
 
         aux_str = ""
         usable_ids = list()
-        for i in range (0,len(plain_credential_list)):
+        for i in range(0, len(plain_credential_list)):
             cred = plain_credential_list[i]
             cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " for " + cred_json["Credential"]["Name"] + "\n"
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
+                         " for " + cred_json["Credential"]["Name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
 
@@ -178,7 +182,8 @@ class App():
             # Insert list of new options (tk._setit hooks them up to var)
             count = 0
             for _id in usable_ids:
-                credential_menu['menu'].add_command(label=_id, command=_setit(credentialSelection, _id))
+                credential_menu['menu'].add_command(
+                    label=_id, command=_setit(credentialSelection, _id))
                 count = count+1
 
         mbox.showinfo("Result", aux_str)
@@ -207,8 +212,25 @@ class App():
         credentials_file_write = open("./credentials_issuer.json", "w")
         credentials_file_write.write(json.dumps(credentials_json))
 
+        # mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
-        #mbox.showinfo("Result", json.dumps(parsed, indent=4))
+    def sendCredential(self):
+        credentials_file = open("./credentials_issuer.json", "r")
+        credentials_str = credentials_file.read()
+        credentials_json = json.loads(credentials_str)
+        credentials_file.close()
+
+        enc_credential_0 = json.loads(credentials_json["encrypted_credentials"][0])
+        print(enc_credential_0)
+        data = {
+            "jsonrpc": "2.0",
+            "method": "credential",
+            "id": 1,
+            "params": [enc_credential_0]
+        }
+        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        pendingRequests_json = pendingRequests.json()
+        print(pendingRequests_json)
 
 
 def main():

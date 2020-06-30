@@ -24,6 +24,7 @@ import json
 import uuid
 import base64
 import time
+import requests
 
 from tkinter import messagebox as mbox
 from datetime import datetime
@@ -56,7 +57,7 @@ class App():
         credentialSelection.set(Credential_list[0]) # default value
 
         credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
-        credential_menu.pack()
+        #credential_menu.pack()
         credential_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
@@ -81,17 +82,22 @@ class App():
         global credential_list
         global Credential_list, credentialSelection, credential_menu
 
-        credentials_file = open("./credentials_saved.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
+        data = {
+            "jsonrpc": "2.0",
+            "method": "pendingCredentials",
+            "id": 1,
+            "params": []
+        }
+        avaliableCredentials = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        avaliableCredentials_json = avaliableCredentials.json()
 
-        credential_list = credentials_json["credentials"]
+        print(avaliableCredentials_json["result"]["credentials"])
+        credential_list = avaliableCredentials_json["result"]["credentials"]
 
         aux_str = ""
         usable_ids = list()
         for i in range (0,len(credential_list)):
-            cred = credential_list[i]
-            cred_json = json.loads(cred)
+            cred_json = credential_list[i]
             new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
@@ -122,7 +128,15 @@ class App():
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
         
     def askNewCredential(self):
-        print("b")
+        data = {
+            "jsonrpc": "2.0",
+            "method": "credentialRequest",
+            "id": 1,
+            "params": [{"name": "Manolo", "type": "credit scoring", "DID": "453"}]
+        }
+        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        pendingRequests_json = pendingRequests.json()
+        print(pendingRequests_json)
 
 
 def main():
