@@ -181,6 +181,20 @@ class App():
             'http://localhost:3000/jsonrpc', data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
 
+        credential_request_file = open("./credentials_request.json", "r")
+        credential_request_str = credential_request_file.read()
+        credential_request_json = json.loads(credential_request_str)
+        credential_request_file.close()
+
+        credential_request_json["request"] += pendingRequests_json["result"]["request"]
+
+        print (credential_request_json)
+
+        credential_request_file_write = open("./credentials_request.json", "w")
+        credential_request_file_write.write(json.dumps(credential_request_json))
+        credential_request_file_write.close()
+
+
         list_waiting_requests = pendingRequests_json["result"]["request"]
 
         aux_str = ""

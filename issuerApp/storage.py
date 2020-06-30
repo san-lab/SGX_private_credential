@@ -1,4 +1,5 @@
 import json
+import copy
 
 requests = {"request": [{"name": "Alice", "type": "credit scoring", "DID": "342"}, {
     "name": "Bob", "type": "credit scoring", "DID": "265"}]}
@@ -9,15 +10,17 @@ credentials = {
     ]
 }
 
-
 def getPendingRequests():
-    print(requests)
-    return requests
+    returnedValue = copy.deepcopy(requests)
+    requests["request"] = []
+    return returnedValue
 
 
 def getCredentials():
+    returnedValue = copy.deepcopy(credentials)
+    credentials["credentials"] = []
     print(credentials)
-    return credentials
+    return returnedValue
 
 
 def pushNewRequest(req):
