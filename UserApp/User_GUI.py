@@ -140,29 +140,32 @@ class App():
         global credential_list
         global Credential_list, credentialSelection, credential_menu
 
+        data = {
+           "jsonrpc": "2.0",
+           "method": "pendingCredentials",
+           "id": 1,
+           "params": []
+        }
+        avaliableCredentials = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
+        avaliableCredentials_json = avaliableCredentials.json()
+
         credentials_file = open("./credentials_saved.json", "r")
         credentials_str = credentials_file.read()
         credentials_json = json.loads(credentials_str)
-        credential_list = credentials_json["credentials"]
 
-        #data = {
-        #    "jsonrpc": "2.0",
-        #    "method": "pendingCredentials",
-        #    "id": 1,
-        #    "params": []
-        #}
-        #avaliableCredentials = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
-        #avaliableCredentials_json = avaliableCredentials.json()
+        credentials_json["credentials"] += avaliableCredentials_json["result"]["credentials"]
 
-        #print(avaliableCredentials_json["result"]["credentials"])
-        #credential_list = avaliableCredentials_json["result"]["credentials"]
+        print(avaliableCredentials_json["result"]["credentials"])
+        new_credential_list = avaliableCredentials_json["result"]["credentials"]
+
+        credential_file_write = open("./credentials_saved.json", "w")
+        credential_file_write.write(json.dumps(credentials_json))
+        credential_file_write.close()
 
         aux_str = ""
         usable_ids = list()
         for i in range (0,len(credential_list)):
-            #cred_json = credential_list[i]
-            cred = credential_list[i]
-            cred_json = json.loads(cred)
+            cred_json = new_credential_list[i]
             new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
