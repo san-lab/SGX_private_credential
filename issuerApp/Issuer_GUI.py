@@ -199,7 +199,6 @@ class App():
         root.mainloop()
 
     def requestRetrieve(self):
-        global list_waiting_req_memory
         global Request_list, requestSelection, request_menu
         data = {
             "jsonrpc": "2.0",
@@ -218,8 +217,6 @@ class App():
 
         credential_request_json["request"] += pendingRequests_json["result"]["request"]
 
-        list_waiting_req_memory = credential_request_json["request"]
-
         print (credential_request_json)
 
         credential_request_file_write = open("./credentials_request.json", "w")
@@ -228,20 +225,24 @@ class App():
 
 
         list_waiting_requests = pendingRequests_json["result"]["request"]
+        complete_list_requests = credential_request_json["request"]
 
         aux_str = ""
-        usable_ids = list()
         for i in range(0, len(list_waiting_requests)):
             request_json = list_waiting_requests[i]
             new_id = str(
                 i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
-            usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
 
         if aux_str == "":
             aux_str = "No requests pending"
 
         else:
+            usable_ids = list()
+            for i in range (0,len(complete_list_requests)):
+                req_json = complete_list_requests[i]
+                new_id = str(i) + ": " + req_json["type"] + " for " + req_json["name"] + "\n"
+                usable_ids.append(new_id)
             requestSelection.set('')
             request_menu['menu'].delete(0, 'end')
 
@@ -258,7 +259,11 @@ class App():
         global plain_credential_list
         global Credential_list, credentialSelection, credential_menu
 
-        global list_waiting_req_memory
+        credential_request_file = open("./credentials_request.json", "r")
+        credential_request_str = credential_request_file.read()
+        credential_request_json = json.loads(credential_request_str)
+        credential_request_file.close()
+        list_waiting_req_memory = credential_request_json["request"]
 
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
@@ -366,18 +371,23 @@ class App():
         # mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def sendCredential(self):
+        global responseSelection
+
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
         credentials_json = json.loads(credentials_str)
         credentials_file.close()
 
-        enc_credential_0 = json.loads(credentials_json["encrypted_credentials"][0])
-        print(enc_credential_0)
+        enc_credentialPosition = responseSelection.get()
+        position = int(enc_credentialPosition.split(':')[0])
+
+        enc_credential = json.loads(credentials_json["encrypted_credentials"][position])
+        print(enc_credential)
         data = {
             "jsonrpc": "2.0",
             "method": "credential",
             "id": 1,
-            "params": [enc_credential_0]
+            "params": [enc_credential]
         }
         pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()

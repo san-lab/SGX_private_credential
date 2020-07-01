@@ -25,8 +25,10 @@ import uuid
 import base64
 import time
 import requests
+import binascii
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Hash import SHA256
 
 from tkinter import messagebox as mbox
 from datetime import datetime
@@ -58,8 +60,8 @@ class App():
 
         credentialType_list = [
         "Good payer cert",
-        "Credit scoring",
-        "Bank account number"
+        "Account ownership cert",
+        "Average account balance cert"
         ]
 
         ttk.Label(
@@ -137,7 +139,7 @@ class App():
         global ClientRSAkeyPair
 
 
-        decryptor = PKCS1_OAEP.new(ClientRSAkeyPair)
+        decryptor = PKCS1_OAEP.new(ClientRSAkeyPair,hashAlgo=SHA256 ,label="Encrypted with Public RSA key".encode('utf8'))
         
         data = {
            "jsonrpc": "2.0",
@@ -153,13 +155,17 @@ class App():
             getCred_json = get_credentials_list[i]
             print(get_credentials_list[0]["Credential"]["lock key"]["encrypted"])
             if getCred_json["Credential"]["lock key"]["encrypted"]:
-                print("Entro")
-                print(getCred_json["Credential"]["lock key"]["value"])
                 lock_key_enc = getCred_json["Credential"]["lock key"]["value"]
-                lock_key_dec = decryptor.decrypt(lock_key_enc)
-                getCred_json["Credential"]["lock key"]["value"] = lock_key_dec
-                getCred_json["Credential"]["lock key"]["encrypted"] == "false"
+                lock_key_enc_bytes = binascii.a2b_base64(lock_key_enc)
+                print(lock_key_enc_bytes)
+                lock_key_dec_bytes = decryptor.decrypt(lock_key_enc_bytes)
+                print(lock_key_dec_bytes)
+                getCred_json["Credential"]["lock key"]["value"] = lock_key_dec_bytes.decode("utf-8") 
+                getCred_json["Credential"]["lock key"]["encrypted"] = False
                 get_credentials_list[i] = getCred_json
+
+
+
 
 
         credentials_file = open("./credentials_saved.json", "r")
