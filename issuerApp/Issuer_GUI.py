@@ -166,10 +166,40 @@ class App():
                     label=_id, command=_setit(responseSelection, _id))
                 count = count+1
 
+        credential_request_file = open("./credentials_request.json", "r")
+        credential_request_str = credential_request_file.read()
+        credential_request_json = json.loads(credential_request_str)
+        credential_request_file.close()
+
+        list_waiting_requests = credential_request_json["request"]
+
+        aux_str = ""
+        usable_ids = list()
+        for i in range(0, len(list_waiting_requests)):
+            request_json = list_waiting_requests[i]
+            new_id = str(
+                i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
+            usable_ids.append(new_id)
+            aux_str = aux_str + new_id + "\n"
+
+        if aux_str == "":
+            aux_str = "No requests pending"
+
+        else:
+            requestSelection.set('')
+            request_menu['menu'].delete(0, 'end')
+
+            # Insert list of new options (tk._setit hooks them up to var)
+            count = 0
+            for _id in usable_ids:
+                request_menu['menu'].add_command(
+                    label=_id, command=_setit(requestSelection, _id))
+                count = count+1
+
         root.mainloop()
 
     def requestRetrieve(self):
-        global list_waiting_requests
+        global list_waiting_req_memory
         global Request_list, requestSelection, request_menu
         data = {
             "jsonrpc": "2.0",
@@ -187,6 +217,8 @@ class App():
         credential_request_file.close()
 
         credential_request_json["request"] += pendingRequests_json["result"]["request"]
+
+        list_waiting_req_memory = credential_request_json["request"]
 
         print (credential_request_json)
 
@@ -226,15 +258,16 @@ class App():
         global plain_credential_list
         global Credential_list, credentialSelection, credential_menu
 
-        global list_waiting_requests
+        global list_waiting_req_memory
 
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
 
-        credential_request = json.dumps(list_waiting_requests[position])
+        credential_request = json.dumps(list_waiting_req_memory[position])
         response = requests.get(
             'http://40.120.61.169:8080/issue', data=credential_request)
         res_json = response.json()
+        res_json["Issuer name"] = "Banco Santander"
 
         res_str = json.dumps(res_json)
 

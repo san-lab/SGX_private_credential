@@ -25,6 +25,8 @@ import uuid
 import base64
 import time
 import requests
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 from tkinter import messagebox as mbox
 from datetime import datetime
@@ -37,13 +39,18 @@ class App():
     def __init__(self):
         global root
         global Credential_list, credentialSelection, credential_menu
-        global e0, e1, e2
+        global e1
+        global memory_credential_list
+        global ClientRSAkeyPair
 
         root = Tk()
         root.geometry('300x500')
 
         root.configure(bg='red2')
         root.title('User credential wallet')
+
+        ClientRSAkeyPair_PEM = open("client.key", "r").read()
+        ClientRSAkeyPair = RSA.import_key(ClientRSAkeyPair_PEM)
 
         Credential_list = [
         ""
@@ -55,13 +62,12 @@ class App():
         "Bank account number"
         ]
 
-        b1 = ttk.Button(
-            root, text="Download pending credentials",
-            command=self.downloadPending)
-        b1.grid(row=1, sticky='ew', pady=(11, 7), padx=(25, 0))
+        ttk.Label(
+            root, text="Name: Alice      DID: 1234").grid(
+                row=1, sticky='ew', pady=(11, 7), padx=(25,0))
 
         b1 = ttk.Button(
-            root, text="List all credentials",
+            root, text="Synchronize credentials",
             command=self.showListCredentials)
         b1.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
@@ -77,31 +83,23 @@ class App():
             command=self.check_cred_info)
         b2.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
-        e0 = ttk.Entry(root)
-        e0.grid(row=5,  pady=(11, 7))
-        e0.insert(0,"Name")
-
         e1 = StringVar(root)
         e1.set(credentialType_list[0]) # default value
 
         credTypes_menu = OptionMenu(root, e1, *credentialType_list)
         #credential_menu.pack()
-        credTypes_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        e2 = ttk.Entry(root)
-        e2.grid(row=7,  pady=(11, 7))
-        e2.insert(0,"DID")
+        credTypes_menu.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b3 = ttk.Button(
             root, text="      Ask for a new credential      ",
             command=self.askNewCredential)
-        b3.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
 
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=9,sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=7,sticky=S, pady=(10, 0))
 
         credentials_file = open("./credentials_saved.json", "r")
         credentials_str = credentials_file.read()
@@ -112,8 +110,8 @@ class App():
         usable_ids = list()
         for i in range (0,len(credential_list)):
             #cred_json = credential_list[i]
-            cred = credential_list[i]
-            cred_json = json.loads(cred)
+            cred_json = credential_list[i]
+            #cred_json = json.loads(cred)
             new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
             usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
@@ -133,13 +131,14 @@ class App():
 
         root.mainloop()
 
-    def downloadPending(self):
-        print("Download")
-
     def showListCredentials(self):
-        global credential_list
+        global memory_credential_list
         global Credential_list, credentialSelection, credential_menu
+        global ClientRSAkeyPair
 
+
+        decryptor = PKCS1_OAEP.new(ClientRSAkeyPair)
+        
         data = {
            "jsonrpc": "2.0",
            "method": "pendingCredentials",
@@ -148,32 +147,51 @@ class App():
         }
         avaliableCredentials = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
         avaliableCredentials_json = avaliableCredentials.json()
+        get_credentials_list = avaliableCredentials_json["result"]["credentials"]
+        
+        for i in range (0, len(get_credentials_list)):
+            getCred_json = get_credentials_list[i]
+            print(get_credentials_list[0]["Credential"]["lock key"]["encrypted"])
+            if getCred_json["Credential"]["lock key"]["encrypted"]:
+                print("Entro")
+                print(getCred_json["Credential"]["lock key"]["value"])
+                lock_key_enc = getCred_json["Credential"]["lock key"]["value"]
+                lock_key_dec = decryptor.decrypt(lock_key_enc)
+                getCred_json["Credential"]["lock key"]["value"] = lock_key_dec
+                getCred_json["Credential"]["lock key"]["encrypted"] == "false"
+                get_credentials_list[i] = getCred_json
+
 
         credentials_file = open("./credentials_saved.json", "r")
         credentials_str = credentials_file.read()
         credentials_json = json.loads(credentials_str)
 
-        credentials_json["credentials"] += avaliableCredentials_json["result"]["credentials"]
+        credentials_json["credentials"] += get_credentials_list
+        memory_credential_list = credentials_json["credentials"]
 
         print(avaliableCredentials_json["result"]["credentials"])
-        new_credential_list = avaliableCredentials_json["result"]["credentials"]
+        new_credential_list = avaliableCredentials_json["result"]["credentials"] # Lista descargada
 
         credential_file_write = open("./credentials_saved.json", "w")
         credential_file_write.write(json.dumps(credentials_json))
         credential_file_write.close()
 
         aux_str = ""
-        usable_ids = list()
-        for i in range (0,len(credential_list)):
+        for i in range (0,len(new_credential_list)):
             cred_json = new_credential_list[i]
             new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
-            usable_ids.append(new_id)
             aux_str = aux_str + new_id + "\n"
 
         if aux_str == "":
             aux_str = "No credentials loaded"
 
         else:
+            usable_ids = list()
+            for i in range (0,len(memory_credential_list)):
+                cred_json = memory_credential_list[i]
+                new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
+                usable_ids.append(new_id)
+
             credentialSelection.set('')
             credential_menu['menu'].delete(0, 'end')
 
@@ -187,23 +205,22 @@ class App():
 
     def check_cred_info(self):
         global credentialSelection
-        global credential_list
+        global memory_credential_list
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
 
-        parsed = json.loads(credential_list[position])
-        print(parsed)
+        parsed = memory_credential_list[position]
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
         
     def askNewCredential(self):
-        global e0, e1, e2
+        global e1
 
         data = {
             "jsonrpc": "2.0",
             "method": "credentialRequest",
             "id": 1,
-            "params": [{"name": e0.get(), "type": e1.get(), "DID": e2.get()}]
+            "params": [{"name": "Alice", "type": e1.get(), "DID": "1234"}]
         }
         pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
