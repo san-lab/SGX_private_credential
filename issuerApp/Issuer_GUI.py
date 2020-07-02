@@ -344,14 +344,34 @@ class App():
         global credentialSelection
         global plain_credential_list
         global Response_list, responseSelection, response_menu
+        global Credential_list, credentialSelection, credential_menu
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
 
-        data = plain_credential_list[position]
+        data = plain_credential_list.pop(position)
         req = requests.get('http://40.120.61.169:8080/submit', data=data)
         req_json = req.json()
         req_str = json.dumps(req_json)
+
+        #reset dropdown for requests
+        usable_ids_plain = list()
+        for i in range(0, len(plain_credential_list)):
+            cred = plain_credential_list[i]
+            cred_json = json.loads(cred)
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " for " + cred_json["Credential"]["Name"] + "\n"
+            usable_ids_plain.append(new_id)
+
+        credentialSelection.set('')
+        credential_menu['menu'].delete(0, 'end')
+
+        # Insert list of new options (tk._setit hooks them up to var)
+        count = 0
+        for _id in usable_ids_plain:
+            credential_menu['menu'].add_command(
+                label=_id, command=_setit(credentialSelection, _id))
+            count = count+1
+
 
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
@@ -361,6 +381,7 @@ class App():
         enc_credential_list = credentials_json["encrypted_credentials"]
         enc_credential_list.append(req_str)
         credentials_json["encrypted_credentials"] = enc_credential_list
+        credentials_json["plain_credentials"] = plain_credential_list
 
         credentials_file_write = open("./credentials_issuer.json", "w")
         credentials_file_write.write(json.dumps(credentials_json))
@@ -396,17 +417,43 @@ class App():
         # mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def sendCredential(self):
-        global responseSelection
+        global Response_list, responseSelection, response_menu
 
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
         credentials_json = json.loads(credentials_str)
+        enc_cred_list = credentials_json["encrypted_credentials"]
         credentials_file.close()
 
         enc_credentialPosition = responseSelection.get()
         position = int(enc_credentialPosition.split(':')[0])
 
-        enc_credential = json.loads(credentials_json["encrypted_credentials"][position])
+        enc_credential = json.loads(enc_cred_list.pop(position))
+        credentials_json["encrypted_credentials"] = enc_cred_list;
+
+        credentials_file_write = open("./credentials_issuer.json", "w")
+        credentials_file_write.write(json.dumps(credentials_json))
+        credentials_file_write.close()
+
+        #reset dropdown for requests
+        usable_ids_enc = list()
+        for i in range(0, len(enc_cred_list)):
+            cred = enc_cred_list[i]
+            cred_json = json.loads(cred)
+            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
+                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
+            usable_ids_enc.append(new_id)
+
+        responseSelection.set('')
+        response_menu['menu'].delete(0, 'end')
+
+        # Insert list of new options (tk._setit hooks them up to var)
+        count = 0
+        for _id in usable_ids_enc:
+            response_menu['menu'].add_command(
+                label=_id, command=_setit(responseSelection, _id))
+            count = count+1 
+
         print(enc_credential)
         data = {
             "jsonrpc": "2.0",
