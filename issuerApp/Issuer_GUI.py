@@ -217,6 +217,7 @@ class App():
 
         credential_request_json["request"] += pendingRequests_json["result"]["request"]
 
+        print("Writing")
         print (credential_request_json)
 
         credential_request_file_write = open("./credentials_request.json", "w")
@@ -258,6 +259,7 @@ class App():
     def generateCredential(self):
         global plain_credential_list
         global Credential_list, credentialSelection, credential_menu
+        global Request_list, requestSelection, request_menu
 
         credential_request_file = open("./credentials_request.json", "r")
         credential_request_str = credential_request_file.read()
@@ -268,7 +270,30 @@ class App():
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
 
-        credential_request = json.dumps(list_waiting_req_memory[position])
+        credential_request = json.dumps(list_waiting_req_memory.pop(position))
+        credential_request_json["request"] = list_waiting_req_memory
+        credential_request_file_write = open("./credentials_request.json", "w")
+        credential_request_file_write.write(json.dumps(credential_request_json))
+        credential_request_file_write.close()
+
+        #reset dropdown for requests
+        usable_ids_req = list()
+        for i in range(0, len(list_waiting_req_memory)):
+            req_json = list_waiting_req_memory[i]
+            new_id = new_id = str(i) + ": " + req_json["type"] + " for " + req_json["name"] + "\n"
+            usable_ids_req.append(new_id)
+
+        requestSelection.set('')
+        request_menu['menu'].delete(0, 'end')
+
+        # Insert list of new options (tk._setit hooks them up to var)
+        count = 0
+        for _id in usable_ids_req:
+            request_menu['menu'].add_command(
+                label=_id, command=_setit(requestSelection, _id))
+            count = count+1
+
+
         response = requests.get(
             'http://40.120.61.169:8080/issue', data=credential_request)
         res_json = response.json()
