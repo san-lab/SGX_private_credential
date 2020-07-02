@@ -34,6 +34,7 @@ import os
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, deleteOne
+from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 
 
 class App():
@@ -114,30 +115,8 @@ class App():
 
         plain_credential_list = credentials_json["plain_credentials"]
 
-        aux_str = ""
-        usable_ids = list()
-        for i in range(0, len(plain_credential_list)):
-            cred = plain_credential_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
-                         " for " + cred_json["Credential"]["Name"] + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
-        if aux_str == "":
-            aux_str = "No credentials loaded"
-
-        else:
-            credentialSelection.set('')
-            credential_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                credential_menu['menu'].add_command(
-                    label=_id, command=_setit(credentialSelection, _id))
-                count = count+1
-
+        _, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
@@ -146,29 +125,8 @@ class App():
 
         enc_credential_list = credentials_json["encrypted_credentials"]
 
-        aux_str = ""
-        usable_ids = list()
-        for i in range(0, len(enc_credential_list)):
-            cred = enc_credential_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
-                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
-        if aux_str == "":
-            aux_str = "No credentials loaded"
-
-        else:
-            responseSelection.set('')
-            response_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                response_menu['menu'].add_command(
-                    label=_id, command=_setit(responseSelection, _id))
-                count = count+1
+        _, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        reloadOptionMenu(responseSelection, response_menu, usable_ids)
 
         credential_request_file = open("./credentials_request.json", "r")
         credential_request_str = credential_request_file.read()
@@ -176,29 +134,9 @@ class App():
         credential_request_file.close()
 
         list_waiting_requests = credential_request_json["request"]
-
-        aux_str = ""
-        usable_ids = list()
-        for i in range(0, len(list_waiting_requests)):
-            request_json = list_waiting_requests[i]
-            new_id = str(
-                i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
-        if aux_str == "":
-            aux_str = "No requests pending"
-
-        else:
-            requestSelection.set('')
-            request_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                request_menu['menu'].add_command(
-                    label=_id, command=_setit(requestSelection, _id))
-                count = count+1
+        
+        _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
+        reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
         root.mainloop()
 
@@ -232,31 +170,13 @@ class App():
         list_waiting_requests = pendingRequests_json["result"]["request"]
         complete_list_requests = credential_request_json["request"]
 
-        aux_str = ""
-        for i in range(0, len(list_waiting_requests)):
-            request_json = list_waiting_requests[i]
-            new_id = str(
-                i) + ": " + request_json["type"] + " for " + request_json["name"] + "\n"
-            aux_str = aux_str + new_id + "\n"
-
+        aux_str, _ = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         if aux_str == "":
             aux_str = "No requests pending"
 
         else:
-            usable_ids = list()
-            for i in range (0,len(complete_list_requests)):
-                req_json = complete_list_requests[i]
-                new_id = str(i) + ": " + req_json["type"] + " for " + req_json["name"] + "\n"
-                usable_ids.append(new_id)
-            requestSelection.set('')
-            request_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                request_menu['menu'].add_command(
-                    label=_id, command=_setit(requestSelection, _id))
-                count = count+1
+            _, usable_ids = createIdsAndString(complete_list_requests, False, "type", "name", " for ")
+            reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
         mbox.showinfo("Result", aux_str)
 
@@ -281,22 +201,8 @@ class App():
         credential_request_file_write.close()
 
         #reset dropdown for requests
-        usable_ids_req = list()
-        for i in range(0, len(list_waiting_req_memory)):
-            req_json = list_waiting_req_memory[i]
-            new_id = new_id = str(i) + ": " + req_json["type"] + " for " + req_json["name"] + "\n"
-            usable_ids_req.append(new_id)
-
-        requestSelection.set('')
-        request_menu['menu'].delete(0, 'end')
-
-        # Insert list of new options (tk._setit hooks them up to var)
-        count = 0
-        for _id in usable_ids_req:
-            request_menu['menu'].add_command(
-                label=_id, command=_setit(requestSelection, _id))
-            count = count+1
-
+        _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
+        reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
         response = requests.get(
             'http://40.120.61.169:8080/issue', data=credential_request)
@@ -318,29 +224,13 @@ class App():
         credentials_file_write.write(json.dumps(credentials_json))
         credentials_file_write.close()
 
-        aux_str = ""
-        usable_ids = list()
-        for i in range(0, len(plain_credential_list)):
-            cred = plain_credential_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
-                         " for " + cred_json["Credential"]["Name"] + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
+        aux_str, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        
         if aux_str == "":
             aux_str = "No credentials loaded"
 
         else:
-            credentialSelection.set('')
-            credential_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                credential_menu['menu'].add_command(
-                    label=_id, command=_setit(credentialSelection, _id))
-                count = count+1
+            reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         mbox.showinfo("Result", aux_str)
 
@@ -358,24 +248,8 @@ class App():
         req_json = req.json()
         req_str = json.dumps(req_json)
 
-        #reset dropdown for requests
-        usable_ids_plain = list()
-        for i in range(0, len(plain_credential_list)):
-            cred = plain_credential_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " for " + cred_json["Credential"]["Name"] + "\n"
-            usable_ids_plain.append(new_id)
-
-        credentialSelection.set('')
-        credential_menu['menu'].delete(0, 'end')
-
-        # Insert list of new options (tk._setit hooks them up to var)
-        count = 0
-        for _id in usable_ids_plain:
-            credential_menu['menu'].add_command(
-                label=_id, command=_setit(credentialSelection, _id))
-            count = count+1
-
+        _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        reloadOptionMenu(credentialSelection, credential_menu, usable_ids_plain)
 
         credentials_file = open("./credentials_issuer.json", "r")
         credentials_str = credentials_file.read()
@@ -391,34 +265,15 @@ class App():
         credentials_file_write.write(json.dumps(credentials_json))
         credentials_file_write.close()
 
-        aux_str = ""
-        usable_ids = list()
-        for i in range(0, len(enc_credential_list)):
-            cred = enc_credential_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
-                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
+        aux_str, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        
         if aux_str == "":
             aux_str = "No credentials loaded"
 
         else:
-            responseSelection.set('')
-            response_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                response_menu['menu'].add_command(
-                    label=_id, command=_setit(responseSelection, _id))
-                count = count+1
+            reloadOptionMenu(responseSelection, response_menu, usable_ids)
 
         mbox.showinfo("Result", aux_str)
-
-
-        # mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def sendCredential(self):
         global Response_list, responseSelection, response_menu
@@ -439,24 +294,8 @@ class App():
         credentials_file_write.write(json.dumps(credentials_json))
         credentials_file_write.close()
 
-        #reset dropdown for requests
-        usable_ids_enc = list()
-        for i in range(0, len(enc_cred_list)):
-            cred = enc_cred_list[i]
-            cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + \
-                         " for " + cred_json["Credential"]["Name"] + "(encrypted)" + "\n"
-            usable_ids_enc.append(new_id)
-
-        responseSelection.set('')
-        response_menu['menu'].delete(0, 'end')
-
-        # Insert list of new options (tk._setit hooks them up to var)
-        count = 0
-        for _id in usable_ids_enc:
-            response_menu['menu'].add_command(
-                label=_id, command=_setit(responseSelection, _id))
-            count = count+1 
+        _, usable_ids_enc = createIdsAndString(enc_cred_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        reloadOptionMenu(responseSelection, response_menu, usable_ids_enc)
 
         print(enc_credential)
         data = {

@@ -38,6 +38,7 @@ import os
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, deleteOne
+from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 
 
 
@@ -81,7 +82,6 @@ class App():
         credentialSelection.set(Credential_list[0]) # default value
 
         credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
-        #credential_menu.pack()
         credential_menu.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
@@ -93,7 +93,6 @@ class App():
         e1.set(credentialType_list[0]) # default value
 
         credTypes_menu = OptionMenu(root, e1, *credentialType_list)
-        #credential_menu.pack()
         credTypes_menu.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b3 = ttk.Button(
@@ -109,28 +108,8 @@ class App():
 
         credential_list = getAll("credentials_saved", "credentials")
 
-        aux_str = ""
-        usable_ids = list()
-        for i in range (0,len(credential_list)):
-            #cred_json = credential_list[i]
-            cred_json = credential_list[i]
-            #cred_json = json.loads(cred)
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
-            usable_ids.append(new_id)
-            aux_str = aux_str + new_id + "\n"
-
-        if aux_str == "":
-            aux_str = "No credentials loaded"
-
-        else:
-            credentialSelection.set('')
-            credential_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                credential_menu['menu'].add_command(label=_id, command=_setit(credentialSelection, _id))
-                count = count+1
+        _, usable_ids = createIdsAndString(credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
+        reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         root.mainloop()
 
@@ -173,30 +152,13 @@ class App():
 
         new_credential_list = avaliableCredentials_json["result"]["credentials"] # Lista descargada
 
-        aux_str = ""
-        for i in range (0,len(new_credential_list)):
-            cred_json = new_credential_list[i]
-            new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
-            aux_str = aux_str + new_id + "\n"
-
+        aux_str, _ = createIdsAndString(new_credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
         if aux_str == "":
             aux_str = "No credentials loaded"
 
         else:
-            usable_ids = list()
-            for i in range (0,len(memory_credential_list)):
-                cred_json = memory_credential_list[i]
-                new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
-                usable_ids.append(new_id)
-
-            credentialSelection.set('')
-            credential_menu['menu'].delete(0, 'end')
-
-            # Insert list of new options (tk._setit hooks them up to var)
-            count = 0
-            for _id in usable_ids:
-                credential_menu['menu'].add_command(label=_id, command=_setit(credentialSelection, _id))
-                count = count+1
+            _, usable_ids = createIdsAndString(memory_credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
+            reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         mbox.showinfo("Result", aux_str)
 
