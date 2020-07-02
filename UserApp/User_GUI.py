@@ -37,7 +37,7 @@ import os
 
 import sys
 sys.path.append('../')
-from dao.dao import getAll, setOne, setMultiple, deleteOne
+from dao.dao import getAll, setOne, setMultiple
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 
 
@@ -132,19 +132,14 @@ class App():
         get_credentials_list = avaliableCredentials_json["result"]["credentials"]
         
         for i in range (0, len(get_credentials_list)):
-            getCred_json = get_credentials_list[i]
-            print(get_credentials_list[0]["Credential"]["lock key"]["encrypted"])
+            getCred_json = json.loads(get_credentials_list[i])
             if getCred_json["Credential"]["lock key"]["encrypted"]:
                 lock_key_enc = getCred_json["Credential"]["lock key"]["value"]
                 lock_key_enc_bytes = binascii.a2b_base64(lock_key_enc)
-                print(lock_key_enc_bytes)
                 lock_key_dec_bytes = decryptor.decrypt(lock_key_enc_bytes)
-                print(lock_key_dec_bytes)
                 getCred_json["Credential"]["lock key"]["value"] = lock_key_dec_bytes.decode("utf-8") 
                 getCred_json["Credential"]["lock key"]["encrypted"] = False
                 get_credentials_list[i] = getCred_json
-
-
 
         setMultiple("credentials_saved", "credentials", get_credentials_list)
 

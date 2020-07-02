@@ -19,14 +19,14 @@ def createIdsAndString(list_to_traverse, json_string, field1, field2, link, endi
     for i in range(0, len(list_to_traverse)):
         if json_string:
             elem = list_to_traverse[i]
-            elem_json = json.loads(cred)
+            elem_json = json.loads(elem)
         else:
             elem_json = list_to_traverse[i]
 
         if (subName != None):
             elem_json = elem_json[subName]
-        print("Printing dump")
-        print(json.dumps(elem_json[field1]))
+        print("HOLA")
+        print(elem_json)
         new_id = str(i) + ": " + elem_json[field1] + link + elem_json[field2]
         if (endingLabel != None):
             new_id += endingLabel + "\n"

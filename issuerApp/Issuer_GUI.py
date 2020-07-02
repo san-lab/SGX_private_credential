@@ -33,7 +33,7 @@ import os
 
 import sys
 sys.path.append('../')
-from dao.dao import getAll, setOne, setMultiple, deleteOne
+from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 
 
@@ -108,32 +108,18 @@ class App():
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
         panel_logo_1.grid(row=8, sticky=S, pady=(10, 0))
 
-        credentials_file = open("./credentials_issuer.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        credentials_file.close()
 
-        plain_credential_list = credentials_json["plain_credentials"]
+        plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
         _, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
-        credentials_file = open("./credentials_issuer.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        credentials_file.close()
-
-        enc_credential_list = credentials_json["encrypted_credentials"]
+        enc_credential_list = getAll("credentials_issuer", "encrypted_credentials")
 
         _, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         reloadOptionMenu(responseSelection, response_menu, usable_ids)
 
-        credential_request_file = open("./credentials_request.json", "r")
-        credential_request_str = credential_request_file.read()
-        credential_request_json = json.loads(credential_request_str)
-        credential_request_file.close()
-
-        list_waiting_requests = credential_request_json["request"]
+        list_waiting_requests = getAll("credentials_request", "request")
         
         _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids)
@@ -152,23 +138,10 @@ class App():
             'http://localhost:3000/jsonrpc', data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
 
-        credential_request_file = open("./credentials_request.json", "r")
-        credential_request_str = credential_request_file.read()
-        credential_request_json = json.loads(credential_request_str)
-        credential_request_file.close()
-
-        credential_request_json["request"] += pendingRequests_json["result"]["request"]
-
-        print("Writing")
-        print (credential_request_json)
-
-        credential_request_file_write = open("./credentials_request.json", "w")
-        credential_request_file_write.write(json.dumps(credential_request_json))
-        credential_request_file_write.close()
-
+        setMultiple("credentials_request", "request", pendingRequests_json["result"]["request"]) 
 
         list_waiting_requests = pendingRequests_json["result"]["request"]
-        complete_list_requests = credential_request_json["request"]
+        complete_list_requests = getAll("credentials_request", "request")
 
         aux_str, _ = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         if aux_str == "":
@@ -185,20 +158,11 @@ class App():
         global Credential_list, credentialSelection, credential_menu
         global Request_list, requestSelection, request_menu
 
-        credential_request_file = open("./credentials_request.json", "r")
-        credential_request_str = credential_request_file.read()
-        credential_request_json = json.loads(credential_request_str)
-        credential_request_file.close()
-        list_waiting_req_memory = credential_request_json["request"]
-
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
 
-        credential_request = json.dumps(list_waiting_req_memory.pop(position))
-        credential_request_json["request"] = list_waiting_req_memory
-        credential_request_file_write = open("./credentials_request.json", "w")
-        credential_request_file_write.write(json.dumps(credential_request_json))
-        credential_request_file_write.close()
+        credential_request = json.dumps(popOne("credentials_request", "request", position))
+        list_waiting_req_memory = getAll("credentials_request", "request")
 
         #reset dropdown for requests
         _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
@@ -211,18 +175,8 @@ class App():
 
         res_str = json.dumps(res_json)
 
-        credentials_file = open("./credentials_issuer.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        credentials_file.close()
-
-        plain_credential_list = credentials_json["plain_credentials"]
-        plain_credential_list.append(res_str)
-        credentials_json["plain_credentials"] = plain_credential_list
-
-        credentials_file_write = open("./credentials_issuer.json", "w")
-        credentials_file_write.write(json.dumps(credentials_json))
-        credentials_file_write.close()
+        setOne("credentials_issuer", "plain_credentials", res_str)
+        plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
         aux_str, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
         
@@ -235,15 +189,14 @@ class App():
         mbox.showinfo("Result", aux_str)
 
     def encryptOnSgx(self):
-        global credentialSelection
-        global plain_credential_list
         global Response_list, responseSelection, response_menu
         global Credential_list, credentialSelection, credential_menu
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
 
-        data = plain_credential_list.pop(position)
+        data = popOne("credentials_issuer", "plain_credentials", position)
+        plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         req = requests.get('http://40.120.61.169:8080/submit', data=data)
         req_json = req.json()
         req_str = json.dumps(req_json)
@@ -251,19 +204,9 @@ class App():
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids_plain)
 
-        credentials_file = open("./credentials_issuer.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        credentials_file.close()
+        setOne("credentials_issuer", "encrypted_credentials", req_str)
 
-        enc_credential_list = credentials_json["encrypted_credentials"]
-        enc_credential_list.append(req_str)
-        credentials_json["encrypted_credentials"] = enc_credential_list
-        credentials_json["plain_credentials"] = plain_credential_list
-
-        credentials_file_write = open("./credentials_issuer.json", "w")
-        credentials_file_write.write(json.dumps(credentials_json))
-        credentials_file_write.close()
+        enc_credential_list = getAll("credentials_issuer" ,"encrypted_credentials")
 
         aux_str, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         
@@ -278,21 +221,11 @@ class App():
     def sendCredential(self):
         global Response_list, responseSelection, response_menu
 
-        credentials_file = open("./credentials_issuer.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        enc_cred_list = credentials_json["encrypted_credentials"]
-        credentials_file.close()
-
         enc_credentialPosition = responseSelection.get()
         position = int(enc_credentialPosition.split(':')[0])
 
-        enc_credential = json.loads(enc_cred_list.pop(position))
-        credentials_json["encrypted_credentials"] = enc_cred_list
-
-        credentials_file_write = open("./credentials_issuer.json", "w")
-        credentials_file_write.write(json.dumps(credentials_json))
-        credentials_file_write.close()
+        enc_credential = popOne("credentials_issuer", "encrypted_credentials", position)
+        enc_cred_list = getAll("credentials_issuer", "encrypted_credentials")
 
         _, usable_ids_enc = createIdsAndString(enc_cred_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         reloadOptionMenu(responseSelection, response_menu, usable_ids_enc)
