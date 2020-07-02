@@ -40,7 +40,18 @@ def deleteOne(fileName, subName, position):
     data_str = data_file.read()
     data_json = json.loads(data_str)
     data_file.close()
-    data_json[subName] += data_json[subName].pop(position)
+    data_json[subName] = data_json[subName].pop(position)
+
+    data_file_write = open(RELATIVE_FILE_PATH + fileName + ".json", "w")
+    data_file_write.write(json.dumps(data_json))
+    data_file_write.close()
+
+def deleteAll(fileName, subName):
+    data_file = open(RELATIVE_FILE_PATH + fileName + ".json", "r")
+    data_str = data_file.read()
+    data_json = json.loads(data_str)
+    data_file.close()
+    data_json[subName] = []
 
     data_file_write = open(RELATIVE_FILE_PATH + fileName + ".json", "w")
     data_file_write.write(json.dumps(data_json))
