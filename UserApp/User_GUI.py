@@ -35,6 +35,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
+import sys
+sys.path.append('../')
+from dao.dao import getAll, setOne, setMultiple, deleteOne
+
 
 
 class App():
@@ -103,10 +107,7 @@ class App():
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
         panel_logo_1.grid(row=7,sticky=S, pady=(10, 0))
 
-        credentials_file = open("./credentials_saved.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-        credential_list = credentials_json["credentials"]
+        credential_list = getAll("credentials_saved", "credentials")
 
         aux_str = ""
         usable_ids = list()
@@ -166,21 +167,11 @@ class App():
 
 
 
+        setMultiple("credentials_saved", "credentials", get_credentials_list)
 
+        memory_credential_list = getAll("credentials_saved", "credentials")
 
-        credentials_file = open("./credentials_saved.json", "r")
-        credentials_str = credentials_file.read()
-        credentials_json = json.loads(credentials_str)
-
-        credentials_json["credentials"] += get_credentials_list
-        memory_credential_list = credentials_json["credentials"]
-
-        print(avaliableCredentials_json["result"]["credentials"])
         new_credential_list = avaliableCredentials_json["result"]["credentials"] # Lista descargada
-
-        credential_file_write = open("./credentials_saved.json", "w")
-        credential_file_write.write(json.dumps(credentials_json))
-        credential_file_write.close()
 
         aux_str = ""
         for i in range (0,len(new_credential_list)):

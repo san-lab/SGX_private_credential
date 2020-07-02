@@ -31,6 +31,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
+import sys
+sys.path.append('../')
+from dao.dao import getAll, setOne, setMultiple, deleteOne
+
 
 class App():
     def __init__(self):
@@ -429,7 +433,7 @@ class App():
         position = int(enc_credentialPosition.split(':')[0])
 
         enc_credential = json.loads(enc_cred_list.pop(position))
-        credentials_json["encrypted_credentials"] = enc_cred_list;
+        credentials_json["encrypted_credentials"] = enc_cred_list
 
         credentials_file_write = open("./credentials_issuer.json", "w")
         credentials_file_write.write(json.dumps(credentials_json))
