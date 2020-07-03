@@ -46,12 +46,13 @@ class App():
     def __init__(self):
         global root
         global Credential_list, credentialSelection, credential_menu
+        global Presentation_List, presentationSelection, presentation_menu
         global e1
         global memory_credential_list
         global ClientRSAkeyPair
 
         root = Tk()
-        root.geometry('300x500')
+        root.geometry('330x500')
 
         root.configure(bg='cyan')
         root.title('User credential wallet')
@@ -69,13 +70,17 @@ class App():
         "Average account balance cert"
         ]
 
+        Presentation_List = [
+        ""
+        ]
+
         ttk.Label(
             root, text="Name: Alice      DID: 1234").grid(
                 row=1, sticky='ew', pady=(11, 7), padx=(25,0))
 
         b1 = ttk.Button(
             root, text="Synchronize credentials",
-            command=self.showListCredentials)
+            command=self.syncCredentials)
         b1.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         credentialSelection = StringVar(root)
@@ -100,11 +105,22 @@ class App():
             command=self.askNewCredential)
         b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        presentationSelection = StringVar(root)
+        presentationSelection.set(Presentation_List[0]) # default value
+
+        presentation_menu = OptionMenu(root, presentationSelection, *Presentation_List)
+        presentation_menu.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        b4 = ttk.Button(
+            root, text="Send presentation to service provider",
+            command=self.sendToServiceProvider)
+        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=7,sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=9,sticky=S, pady=(10, 0))
 
         credential_list = getAll("credentials_saved", "credentials")
 
@@ -113,7 +129,7 @@ class App():
 
         root.mainloop()
 
-    def showListCredentials(self):
+    def syncCredentials(self):
         global memory_credential_list
         global Credential_list, credentialSelection, credential_menu
         global ClientRSAkeyPair
@@ -155,6 +171,7 @@ class App():
         else:
             _,usable_ids = createIdsAndStringSpecialCase(memory_credential_list)
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
+            aux_str = "Credentials syncronized"
 
         mbox.showinfo("Result", aux_str)
 
@@ -182,6 +199,9 @@ class App():
         print(pendingRequests_json)
 
         mbox.showinfo("Result", "Credential request sent")
+
+    def sendToServiceProvider(self):
+        print("C")
 
 
 def main():

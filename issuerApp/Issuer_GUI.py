@@ -45,7 +45,7 @@ class App():
         global Response_list, responseSelection, response_menu
 
         root = Tk()
-        root.geometry('300x500')
+        root.geometry('330x500')
 
         root.configure(bg='red2')
         root.title('Issuer credential app')
@@ -185,6 +185,7 @@ class App():
 
         else:
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
+            aux_str = "Credential generated"
 
         mbox.showinfo("Result", aux_str)
 
@@ -215,6 +216,7 @@ class App():
 
         else:
             reloadOptionMenu(responseSelection, response_menu, usable_ids)
+            aux_str = "Credential encrypted on SGX"
 
         mbox.showinfo("Result", aux_str)
 
@@ -240,6 +242,8 @@ class App():
         pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
         print(pendingRequests_json)
+
+        mbox.showinfo("Result", "Credential sent to user")
 
 
 def main():

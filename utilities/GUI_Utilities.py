@@ -37,4 +37,14 @@ def createIdsAndString(list_to_traverse, json_string, field1, field2, link, endi
 
     return aux_str, usable_ids
 
+def createIdsAndStringSpecialCase(list_to_traverse):
+    aux_str = ""
+    usable_ids = list()
+    for i in range (0,len(list_to_traverse)):
+        cred_json = list_to_traverse[i]
+        new_id = str(i) + ": " + cred_json["Credential"]["Type"] + " by " + cred_json["Issuer name"] + "\n"
+        usable_ids.append(new_id)
+        aux_str = aux_str + new_id + "\n"
+    return aux_str, usable_ids
+
 
