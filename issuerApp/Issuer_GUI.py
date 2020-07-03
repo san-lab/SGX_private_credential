@@ -35,7 +35,7 @@ import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
-
+from utilities.communicationToRPC import rpcCall
 
 class App():
     def __init__(self):
@@ -128,15 +128,8 @@ class App():
 
     def requestRetrieve(self):
         global Request_list, requestSelection, request_menu
-        data = {
-            "jsonrpc": "2.0",
-            "method": "pendingRequests",
-            "id": 1,
-            "params": []
-        }
-        pendingRequests = requests.post(
-            'http://localhost:3000/jsonrpc', data=json.dumps(data))
-        pendingRequests_json = pendingRequests.json()
+
+        pendingRequests_json = rpcCall("pendingRequests")
 
         setMultiple("credentials_request", "request", pendingRequests_json["result"]["request"]) 
 
@@ -233,14 +226,7 @@ class App():
         reloadOptionMenu(responseSelection, response_menu, usable_ids_enc)
 
         print(enc_credential)
-        data = {
-            "jsonrpc": "2.0",
-            "method": "credential",
-            "id": 1,
-            "params": [enc_credential]
-        }
-        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
-        pendingRequests_json = pendingRequests.json()
+        pendingRequests_json = rpcCall("credential", enc_credential)
         print(pendingRequests_json)
 
         mbox.showinfo("Result", "Credential sent to user")
