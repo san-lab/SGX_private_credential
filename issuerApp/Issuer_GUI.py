@@ -35,7 +35,7 @@ import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
-from utilities.communicationToRPC import rpcCall
+from utilities.communicationToRPC import rpcCall, apiCall
 
 class App():
     def __init__(self):
@@ -161,9 +161,7 @@ class App():
         _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
-        response = requests.get(
-            'http://40.120.61.169:8080/issue', data=credential_request)
-        res_json = response.json()
+        res_json = apiCall("issue", credential_request)
         res_json["Issuer name"] = "Banco Santander"
 
         res_str = json.dumps(res_json)
@@ -191,8 +189,7 @@ class App():
 
         data = popOne("credentials_issuer", "plain_credentials", position)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
-        req = requests.get('http://40.120.61.169:8080/submit', data=data)
-        req_json = req.json()
+        req_json = res_json = apiCall("submit", data)
         req_str = json.dumps(req_json)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
