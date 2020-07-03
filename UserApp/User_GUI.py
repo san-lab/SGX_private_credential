@@ -39,7 +39,7 @@ import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
-
+from utilities.communicationToRPC import rpcCall
 
 
 class App():
@@ -121,14 +121,7 @@ class App():
 
         decryptor = PKCS1_OAEP.new(ClientRSAkeyPair,hashAlgo=SHA256 ,label="Encrypted with Public RSA key".encode('utf8'))
         
-        data = {
-           "jsonrpc": "2.0",
-           "method": "pendingCredentials",
-           "id": 1,
-           "params": []
-        }
-        avaliableCredentials = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
-        avaliableCredentials_json = avaliableCredentials.json()
+        avaliableCredentials_json = rpcCall("pendingCredentials")
         get_credentials_list = avaliableCredentials_json["result"]["credentials"]
         
         for i in range (0, len(get_credentials_list)):
@@ -171,14 +164,7 @@ class App():
     def askNewCredential(self):
         global e1
 
-        data = {
-            "jsonrpc": "2.0",
-            "method": "credentialRequest",
-            "id": 1,
-            "params": [{"name": "Alice", "type": e1.get(), "DID": "1234"}]
-        }
-        pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
-        pendingRequests_json = pendingRequests.json()
+        pendingRequests_json = rpcCall("credentialRequest", {"name": "Alice", "type": e1.get(), "DID": "1234"})
         print(pendingRequests_json)
 
         mbox.showinfo("Result", "Credential request sent")
