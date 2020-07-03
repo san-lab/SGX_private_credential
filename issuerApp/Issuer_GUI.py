@@ -178,7 +178,7 @@ class App():
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
             aux_str = "Credential generated"
 
-        mbox.showinfo("Result", aux_str)
+        mbox.showinfo("Result", json.dumps(res_json, indent=4))
 
     def encryptOnSgx(self):
         global Response_list, responseSelection, response_menu
@@ -208,7 +208,7 @@ class App():
             reloadOptionMenu(responseSelection, response_menu, usable_ids)
             aux_str = "Credential encrypted on SGX"
 
-        mbox.showinfo("Result", aux_str)
+        mbox.showinfo("Result", json.dumps(req_json, indent=4))
 
     def sendCredential(self):
         global Response_list, responseSelection, response_menu
