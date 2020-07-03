@@ -38,7 +38,7 @@ import os
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple
-from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
+from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
 
 
 
@@ -53,7 +53,7 @@ class App():
         root = Tk()
         root.geometry('300x500')
 
-        root.configure(bg='red2')
+        root.configure(bg='cyan')
         root.title('User credential wallet')
 
         ClientRSAkeyPair_PEM = open("client.key", "r").read()
@@ -108,7 +108,7 @@ class App():
 
         credential_list = getAll("credentials_saved", "credentials")
 
-        _, usable_ids = createIdsAndString(credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
+        aux_str,usable_ids = createIdsAndStringSpecialCase(credential_list)
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         root.mainloop()
@@ -147,12 +147,13 @@ class App():
 
         new_credential_list = avaliableCredentials_json["result"]["credentials"] # Lista descargada
 
-        aux_str, _ = createIdsAndString(new_credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
+        aux_str,_ = createIdsAndStringSpecialCase(new_credential_list)
+        
         if aux_str == "":
             aux_str = "No credentials loaded"
 
         else:
-            _, usable_ids = createIdsAndString(memory_credential_list, False, "Type", "Issuer name", " by ", subName="Credential")
+            _,usable_ids = createIdsAndStringSpecialCase(memory_credential_list)
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         mbox.showinfo("Result", aux_str)
@@ -179,6 +180,8 @@ class App():
         pendingRequests = requests.post('http://localhost:3000/jsonrpc' , data=json.dumps(data))
         pendingRequests_json = pendingRequests.json()
         print(pendingRequests_json)
+
+        mbox.showinfo("Result", "Credential request sent")
 
 
 def main():
