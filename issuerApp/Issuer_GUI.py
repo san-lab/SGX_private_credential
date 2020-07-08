@@ -30,6 +30,8 @@ from tkinter import messagebox as mbox
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+from ecpy.curves import Curve, Point
+from ecpy.keys import ECPublicKey, ECPrivateKey
 
 import sys
 sys.path.append('../')
@@ -43,12 +45,22 @@ class App():
         global Credential_list, credentialSelection, credential_menu
         global Request_list, requestSelection, request_menu
         global Response_list, responseSelection, response_menu
+        global Lock_key_list, lock_key_Selection, lock_key_menu
+        global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
         root = Tk()
         root.geometry('330x500')
 
         root.configure(bg='red2')
         root.title('Issuer credential app')
+
+        cv = Curve.get_curve("Ed25519")
+        g = cv.generator
+        p = cv.field
+        q = cv.order
+        bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636
+        bankPublicECKey = cv.mul_point(bankPrivateECKey, g)
+        compressedPublicECKey = cv.encode_point(bankPublicECKey).hex()
 
         Credential_list = [
         ""
@@ -59,6 +71,10 @@ class App():
         ]
 
         Response_list = [
+        ""
+        ]
+
+        Lock_key_list = [
         ""
         ]
 
@@ -103,10 +119,27 @@ class App():
             command=self.sendCredential)
         b3.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        b4 = ttk.Button(
+            root, text="Retrieve unlock request",
+            command=self.retrieveLockKeys)
+        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        lock_key_Selection = StringVar(root)
+        lock_key_Selection.set(Lock_key_list[0])  # default value
+
+        lock_key_menu = OptionMenu(
+            root, lock_key_Selection, *Lock_key_list)
+        lock_key_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        b4 = ttk.Button(
+            root, text="Retrieve and send unlock key",
+            command=self.sendUnlockKey)
+        b4.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
+
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=8, sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
 
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
@@ -123,6 +156,11 @@ class App():
         
         _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids)
+
+        list_waiting_lock_keys = getAll("lock_keys_issuer", "lock_keys")
+        
+        _, usable_ids = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
+        reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
         root.mainloop()
 
@@ -188,6 +226,10 @@ class App():
         position = int(credentialPosition.split(':')[0])
 
         data = popOne("credentials_issuer", "plain_credentials", position)
+        data_json = json.loads(data)
+        print(compressedPublicECKey)
+        data_json["Issuer public key"]["Issuer Public key"] = compressedPublicECKey
+        data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         req_json = res_json = apiCall("submit", data)
         req_str = json.dumps(req_json)
@@ -228,6 +270,68 @@ class App():
 
         mbox.showinfo("Result", "Credential sent to user")
 
+    def retrieveLockKeys(self):
+        global Lock_key_list, lock_key_Selection, lock_key_menu
+
+        pendingLockKeys_json = rpcCall("pendingLockKeys")
+
+        setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
+
+        list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
+        complete_list_lock_keys = getAll("lock_keys_issuer", "lock_keys")
+
+        aux_str, _ = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
+        if aux_str == "":
+            aux_str = "No requests pending"
+
+        else:
+            _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
+            reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
+
+        mbox.showinfo("Result", aux_str)
+
+    def sendUnlockKey(self):
+        global Lock_key_list, lock_key_Selection, lock_key_menu
+        global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
+
+
+        lock_keyPosition = lock_key_Selection.get()
+        position = int(lock_keyPosition.split(':')[0])
+
+        lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
+        lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
+
+        lock_key_compressed = lock_key_json["key"]
+        lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
+
+        eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
+
+        unlock_key_int = cv.mul_point(bankPrivateECKey, eph_pub_key).x
+        unlock_key = hex(unlock_key_int)
+        print("Hola")
+        print(unlock_key)
+
+        pendingRequests_json = rpcCall("unlockKey", {"DID": "1111", "unlock_key": unlock_key[2:], "lock_key": lock_key_compressed})
+
+        _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
+        reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
+
+        mbox.showinfo("Result", "Unlock key sent")
+
+    def uncompressKey(self,compressedKey):
+        compKey_bytes = bytes.fromhex(compressedKey)
+        compKey_sign = compKey_bytes[31] & 128
+
+        compKey_barray = bytearray(compKey_bytes)
+
+        compKey_barray[31] &= 127
+        compKey_barray.reverse()
+
+        comp_key_rev = bytes(compKey_barray)
+        comp_key_int = int.from_bytes(comp_key_rev, "big")
+
+        recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
+        return recoveredXCoord, comp_key_int
 
 def main():
     App()

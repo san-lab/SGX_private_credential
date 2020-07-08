@@ -126,6 +126,7 @@ class App():
 
         aux_str,usable_ids = createIdsAndStringSpecialCase(credential_list)
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
+        reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
 
         root.mainloop()
 
@@ -164,6 +165,7 @@ class App():
         else:
             _,usable_ids = createIdsAndStringSpecialCase(memory_credential_list)
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
+            reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
             aux_str = "Credentials syncronized"
 
         mbox.showinfo("Result", aux_str)
@@ -187,7 +189,17 @@ class App():
         mbox.showinfo("Result", "Credential request sent")
 
     def sendToServiceProvider(self):
-        print("C")
+        global Presentation_List, presentationSelection, presentation_menu
+
+        credential_list = getAll("credentials_saved", "credentials")
+
+        presentationPosition = presentationSelection.get()
+        position = int(presentationPosition.split(':')[0])
+        parsed = credential_list[position]
+
+        pendingRequests_json = rpcCall("presentation", parsed)
+
+        mbox.showinfo("Result", "Presentation sent to Service Provider")
 
 
 def main():

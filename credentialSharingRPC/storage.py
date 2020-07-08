@@ -3,8 +3,9 @@ import copy
 
 requests = {"request": []}
 credentials = {"credentials": []}
-lock_keys = {"lock_keys": [{"DID":123, "key": "ab432"}]}
-unlock_keys = {"unlock_keys": [{"DID":124, "key": "234bca"}]}
+presentations = {"presentations": []}
+lock_keys = {"lock_keys": []} #TODO requesterDID
+unlock_keys = {"unlock_keys": []} #{"DID":124, "unlock_key": "234bca", "lock_key": "ab432"}
 
 def getPendingRequests():
     returnedValue = copy.deepcopy(requests)
@@ -17,6 +18,11 @@ def getCredentials():
     credentials["credentials"] = []
     return returnedValue
 
+def getPresentations():
+    returnedValue = copy.deepcopy(presentations)
+    presentations["presentations"] = []
+    return returnedValue
+
 def getLockKeys():
     returnedValue = copy.deepcopy(lock_keys)
     lock_keys["lock_keys"] = []
@@ -26,7 +32,6 @@ def getUnlockKeys():
     returnedValue = copy.deepcopy(unlock_keys)
     unlock_keys["unlock_keys"] = []
     return returnedValue
-
 
 def pushNewRequest(req):
     print(req)
@@ -38,6 +43,11 @@ def pushNewCredential(req):
     print(req)
     credentials["credentials"].append(req)
     print(credentials)
+
+def pushNewPresentation(req):
+    print(req)
+    presentations["presentations"].append(req)
+    print(presentations)
 
 def pushNewLockKey(req):
     print(req)

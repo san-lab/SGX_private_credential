@@ -16,7 +16,7 @@ def getOne(fileName, subName, position):
     data_str = data_file.read()
     data_json = json.loads(data_str)
     data_file.close()
-    return data_json[subname][position]
+    return data_json[subName][position]
 
 def setOne(fileName, subName, item):
     data_file = open(RELATIVE_FILE_PATH + fileName + ".json", "r")
