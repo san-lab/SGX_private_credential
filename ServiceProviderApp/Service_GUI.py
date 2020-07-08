@@ -227,10 +227,13 @@ class App():
         encrypted_value_bytes = bytes.fromhex(encrypted_value_hex)
         encrypted_value_barray = bytearray(encrypted_value_bytes)
         AESSymmetricKey = enc_credential_withK["Credential"]["unlock key"]
+        iv = enc_credential_withK["iv"]
+        print("IV")
+        print(iv)
 
         formatedAESSymmetricKeyPrime = hashlib.sha256(str(int("0x" + AESSymmetricKey, 16)).encode()).digest()
 
-        padded_decrypted_str = self.aux_decrypt(encrypted_value_barray,formatedAESSymmetricKeyPrime,AES.MODE_GCM)
+        padded_decrypted_str = self.aux_decrypt(encrypted_value_barray,formatedAESSymmetricKeyPrime,AES.MODE_GCM, iv_bytes)
         print(padded_decrypted_str)
         print(bytes(padded_decrypted_str[16:]))
         decrypted_str = Padding.removePadding(padded_decrypted_str.decode(),mode=0)
