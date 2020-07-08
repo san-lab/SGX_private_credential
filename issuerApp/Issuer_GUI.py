@@ -231,7 +231,7 @@ class App():
         data_json["Issuer public key"]["Issuer Public key"] = compressedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
-        req_json = res_json = apiCall("submit", data, 'iv')
+        req_json = res_json = apiCall("submit", data, 'scorebytes')
         req_str = json.dumps(req_json)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")

@@ -227,29 +227,33 @@ class App():
         encrypted_value_bytes = bytes.fromhex(encrypted_value_hex)
         encrypted_value_barray = bytearray(encrypted_value_bytes)
         AESSymmetricKey = enc_credential_withK["Credential"]["unlock key"]
-        iv = enc_credential_withK["iv"]
-        print("IV")
-        print(iv)
+        iv_hex = encrypted_value_barray[:12]
+        iv_bytes = bytes(iv_hex)
+        scorebytes_hex = enc_credential_withK["scorebytes"]
+        AESSymmetricKey_bytes = bytes.fromhex(AESSymmetricKey)
+        decrypted_value = self.decrypt_mockUp(encrypted_value_hex,AESSymmetricKey,iv_hex)
 
-        formatedAESSymmetricKeyPrime = hashlib.sha256(str(int("0x" + AESSymmetricKey, 16)).encode()).digest()
-
-        padded_decrypted_str = self.aux_decrypt(encrypted_value_barray,formatedAESSymmetricKeyPrime,AES.MODE_GCM)
-        print(padded_decrypted_str)
-        print(bytes(padded_decrypted_str[16:]))
-        decrypted_str = Padding.removePadding(padded_decrypted_str.decode(),mode=0)
-        print(decrypted_str)
-        #enc_credential_withK["Credential"]["score"]["value"] = decrypted_str
-        #enc_credential_withK["Credential"]["score"]["encrypted"] = False
-
-        #setOne("credentials_serviceP","plain_credentials", enc_credential_withK)
+        enc_credential_withK["Credential"]["score"]["value"] = decrypted_value
+        enc_credential_withK["Credential"]["score"]["encrypted"] = False
+        setOne("credentials_serviceP","plain_credentials", enc_credential_withK)
         
-        #plain_credentials_list = getAll("credentials_serviceP","plain_credentials")
-        #_, usable_ids = createIdsAndString(plain_credentials_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(plain)")
-        #reloadOptionMenu(plainSelection, plain_menu, usable_ids)
+        plain_credentials_list = getAll("credentials_serviceP","plain_credentials")
+        _, usable_ids = createIdsAndString(plain_credentials_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(plain)")
+        reloadOptionMenu(plainSelection, plain_menu, usable_ids)
 
-    def aux_decrypt(self,ciphertext,key, mode):
-        encobj = AES.new(key,mode)
+        enc_credentia_withK_list = getAll("credentials_serviceP", "encrypted_credentials_withK")
+
+        _, usable_ids = createIdsAndString(enc_credentia_withK_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
+        reloadOptionMenu(preWithKeySelection, preWithKey_menu, usable_ids)
+
+        mbox.showinfo("Result", "Presentation decrypted")
+
+    def aux_decrypt(self,ciphertext,key, mode, iv_bytes):
+        encobj = AES.new(key,mode,iv_bytes)
         return(encobj.decrypt(ciphertext))
+
+    def decrypt_mockUp(self,ciphertext,key, iv_bytes):
+        return "A Plus"
         
 
     def checkInfoPlain(self):
