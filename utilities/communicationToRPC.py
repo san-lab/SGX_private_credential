@@ -26,8 +26,13 @@ def rpcCall(method, parameters=None):
             RPC_SERVER_ENDPOINT, data=json.dumps(data))
     return response.json()
 
-def apiCall(verb, data):
+def apiCall(verb, data, pickHeader=None):
 
     response = requests.get(
             API_SERVER_ENDPOINT + verb, data=data)
-    return response.json()
+    
+    responseJSON = response.json()
+    if pickHeader != None:
+        responseJSON[pickHeader] = response.headers.get(pickHeader)
+
+    return responseJSON
