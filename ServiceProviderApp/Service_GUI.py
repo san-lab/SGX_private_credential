@@ -233,7 +233,7 @@ class App():
 
         formatedAESSymmetricKeyPrime = hashlib.sha256(str(int("0x" + AESSymmetricKey, 16)).encode()).digest()
 
-        padded_decrypted_str = self.aux_decrypt(encrypted_value_barray,formatedAESSymmetricKeyPrime,AES.MODE_GCM, iv_bytes)
+        padded_decrypted_str = self.aux_decrypt(encrypted_value_barray,formatedAESSymmetricKeyPrime,AES.MODE_GCM)
         print(padded_decrypted_str)
         print(bytes(padded_decrypted_str[16:]))
         decrypted_str = Padding.removePadding(padded_decrypted_str.decode(),mode=0)
