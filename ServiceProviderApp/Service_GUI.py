@@ -31,6 +31,9 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
+from ecpy.curves import Curve, Point
+from ecpy.keys import ECPublicKey, ECPrivateKey
+from ecpy.ecdsa      import ECDSA
 import Padding
 
 from tkinter import messagebox as mbox
@@ -42,8 +45,10 @@ import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
-from utilities.communicationToRPC import rpcCall
+from utilities.communicationToRPC import rpcCall, apiCall
 
+class DataIntegrityError(Exception):
+    pass
 
 
 class App():
@@ -52,12 +57,18 @@ class App():
         global Presentation_List, presentationSelection, presentation_menu
         global PreWithKey_list, preWithKeySelection, preWithKey_menu
         global Plain_list, plainSelection, plain_menu
+        global cv, g,p,q
 
         root = Tk()
-        root.geometry('330x500')
+        root.geometry('330x540')
 
         root.configure(bg='green')
-        root.title('Service Provider app')
+        root.title('Bankia app')
+
+        cv = Curve.get_curve("Ed25519")
+        g = cv.generator
+        p = cv.field
+        q = cv.order
 
         Presentation_list = [
         ""
@@ -83,7 +94,7 @@ class App():
         presentation_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
-            root, text="Check encrypted presentation info",
+            root, text="View encrypted presentation info",
             command=self.checkInfoEnc)
         b2.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
 
@@ -115,15 +126,20 @@ class App():
         plain_menu.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b6 = ttk.Button(
-            root, text="Check plain presentation info",
+            root, text="View plain presentation info",
             command=self.checkInfoPlain)
         b6.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        b7 = ttk.Button(
+            root, text="Validate signature",
+            command=self.validateSignature)
+        b7.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
 
-        img_logo = ImageTk.PhotoImage(Image.open(
-            "./images/santander-logo-13.png"))
-        panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=10,sticky=S, pady=(10, 0))
+
+        #img_logo = ImageTk.PhotoImage(Image.open(
+        #    "./images/santander-logo-13.png"))
+        #panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
+        #panel_logo_1.grid(row=11,sticky=S, pady=(10, 0))
 
         enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
 
@@ -161,7 +177,7 @@ class App():
             _, usable_ids = createIdsAndString(complete_list_presentations, False, "Type", "Name", " for ", subName="Credential")
             reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
 
-        mbox.showinfo("Result", aux_str)
+        mbox.showinfo("Result", "User presentations retrieved")
 
     def checkInfoEnc(self):
         global presentationSelection
@@ -172,6 +188,15 @@ class App():
         enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
 
         parsed = enc_credential_list[position]
+
+        RSA_key = parsed["Subject Public key"]
+        RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]
+        parsed["Subject Public key"] = RSA_key_Shortened
+
+        issuer_signature = parsed["IssuerSignature"]
+        issuer_signature_short = issuer_signature[:8] + "...." + issuer_signature[-8:]
+        parsed["IssuerSignature"] = issuer_signature_short
+
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def askUnlockKey(self):
@@ -222,19 +247,15 @@ class App():
 
         enc_credential_withK = popOne("credentials_serviceP", "encrypted_credentials_withK", position)
 
-        encrypted_value_str = enc_credential_withK["Credential"]["score"]["value"]
-        encrypted_value_hex = base64.b64decode(encrypted_value_str).hex()
-        encrypted_value_bytes = bytes.fromhex(encrypted_value_hex)
-        encrypted_value_barray = bytearray(encrypted_value_bytes)
-        AESSymmetricKey = enc_credential_withK["Credential"]["unlock key"]
-        iv_hex = encrypted_value_barray[:12]
-        iv_bytes = bytes(iv_hex)
-        scorebytes_hex = enc_credential_withK["scorebytes"]
-        AESSymmetricKey_bytes = bytes.fromhex(AESSymmetricKey)
-        decrypted_value = self.decrypt_mockUp(encrypted_value_hex,AESSymmetricKey,iv_hex)
+        cipher_b64 = enc_credential_withK["IssuerSignature"]
+        cipher_bytes = base64.b64decode(cipher_b64)
+        key_hex = enc_credential_withK["Credential"]["unlock key"]
+        key_bytes = bytes.fromhex(key_hex)
+        plain_bytes = self.decrypt(key_bytes, cipher_bytes)
+        plaintext = str(plain_bytes, "utf-8")
 
-        enc_credential_withK["Credential"]["score"]["value"] = decrypted_value
-        enc_credential_withK["Credential"]["score"]["encrypted"] = False
+        enc_credential_withK["IssuerSignature"] = plaintext
+        enc_credential_withK["signature encrypted"] = False
         setOne("credentials_serviceP","plain_credentials", enc_credential_withK)
         
         plain_credentials_list = getAll("credentials_serviceP","plain_credentials")
@@ -248,12 +269,32 @@ class App():
 
         mbox.showinfo("Result", "Presentation decrypted")
 
-    def aux_decrypt(self,ciphertext,key, mode, iv_bytes):
-        encobj = AES.new(key,mode,iv_bytes)
-        return(encobj.decrypt(ciphertext))
+    def decrypt(self, key, ciphertext: bytes) -> bytes:
+        """Return plaintext for given ciphertext."""
 
-    def decrypt_mockUp(self,ciphertext,key, iv_bytes):
-        return "A Plus"
+        # Split out the nonce, tag, and encrypted data.
+        nonce = ciphertext[:12]
+        if len(nonce) != 12:
+            raise DataIntegrityError("Cipher text is damaged: invalid nonce length")
+
+        tlen = len(ciphertext) - 16
+        if tlen < 12:
+            raise DataIntegrityError("Cipher text is damaged: too short")
+
+        encrypted = ciphertext[12: tlen]
+        tag = ciphertext[tlen:]
+        if len(tag) != 16:
+            raise DataIntegrityError("Cipher text is damaged: invalid tag length")
+
+        # Construct AES cipher, with old nonce.
+        cipher = AES.new(key, AES.MODE_GCM, nonce)
+
+        # Decrypt and verify.
+        try:
+            plaintext = cipher.decrypt_and_verify(encrypted, tag)  # type: ignore
+        except ValueError as e:
+            raise DataIntegrityError("Cipher text is damaged: {}".format(e))
+        return plaintext
         
 
     def checkInfoPlain(self):
@@ -265,7 +306,61 @@ class App():
         plain_credential_list = getAll("credentials_serviceP", "plain_credentials")
 
         parsed = plain_credential_list[position]
+
+        RSA_key = parsed["Subject Public key"]
+        RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]
+        parsed["Subject Public key"] = RSA_key_Shortened
+
+        issuer_signature = parsed["IssuerSignature"]
+        issuer_signature_short = issuer_signature[:8] + "...." + issuer_signature[-8:]
+        parsed["IssuerSignature"] = issuer_signature_short
+
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
+
+    def validateSignature(self):
+        global Plain_list, plainSelection, plain_menu
+        global cv
+
+        plainKPosition = plainSelection.get()
+        position = int(plainKPosition.split(':')[0])
+
+        plain_credential = getOne("credentials_serviceP", "plain_credentials", position)
+
+        issuer_pubK_comp = plain_credential["Issuer public key"]
+        issuer_pk_x, issuer_pk_y = self.uncompressKey(issuer_pubK_comp)
+        pub_key_point  = Point(issuer_pk_x,issuer_pk_y,cv)
+        issuer_public_key = ECPublicKey(pub_key_point)
+
+        issuer_signature = plain_credential["IssuerSignature"]
+
+        signed_str = plain_credential["Credential"]["Name"] + plain_credential["Credential"]["DID"] + plain_credential["Credential"]["Type"] + plain_credential["Credential"]["value"]# + plain_credential["IssuerDID"]
+
+        m = hashlib.sha512()
+        m.update(signed_str.encode())
+        hashed_str = m.digest()
+
+        signer = ECDSA()
+        verified = signer.verify(hashed_str,bytes.fromhex(issuer_signature),issuer_public_key)
+        print(signed_str)
+        print(verified)
+        mbox.showinfo("Result", "The signature is valid")
+
+    def uncompressKey(self,compressedKey):
+        global cv
+        compKey_bytes = bytes.fromhex(compressedKey)
+        compKey_sign = compKey_bytes[31] & 128
+
+        compKey_barray = bytearray(compKey_bytes)
+
+        compKey_barray[31] &= 127
+        compKey_barray.reverse()
+
+        comp_key_rev = bytes(compKey_barray)
+        comp_key_int = int.from_bytes(comp_key_rev, "big")
+
+        recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
+        return recoveredXCoord, comp_key_int
+
 
 
 def main():

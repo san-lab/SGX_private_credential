@@ -49,7 +49,7 @@ class App():
         global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
         root = Tk()
-        root.geometry('330x500')
+        root.geometry('330x540')
 
         root.configure(bg='red2')
         root.title('Issuer credential app')
@@ -182,7 +182,7 @@ class App():
             _, usable_ids = createIdsAndString(complete_list_requests, False, "type", "name", " for ")
             reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
-        mbox.showinfo("Result", aux_str)
+        mbox.showinfo("Result", "Pending requests retrieved")
 
     def generateCredential(self):
         global plain_credential_list
@@ -199,8 +199,9 @@ class App():
         _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
-        res_json = apiCall("issue", credential_request)
-        res_json["Issuer name"] = "Banco Santander"
+        res_json = apiCall("issue3", credential_request)
+        res_json["Issuer name"] = "Santander"
+        res_json["IssuerDID"] = "00042"
 
         res_str = json.dumps(res_json)
 
@@ -216,6 +217,10 @@ class App():
             reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
             aux_str = "Credential generated"
 
+        RSA_key = res_json["Subject Public key"]
+        RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]
+        res_json["Subject Public key"] = RSA_key_Shortened
+
         mbox.showinfo("Result", json.dumps(res_json, indent=4))
 
     def encryptOnSgx(self):
@@ -228,10 +233,10 @@ class App():
         data = popOne("credentials_issuer", "plain_credentials", position)
         data_json = json.loads(data)
         print(compressedPublicECKey)
-        data_json["Issuer public key"]["Issuer Public key"] = compressedPublicECKey
+        data_json["Issuer public key"] = compressedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
-        req_json = res_json = apiCall("submit", data, 'scorebytes')
+        req_json = res_json = apiCall("submit3", data)
         req_str = json.dumps(req_json)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
@@ -249,6 +254,18 @@ class App():
         else:
             reloadOptionMenu(responseSelection, response_menu, usable_ids)
             aux_str = "Credential encrypted on SGX"
+
+        RSA_key = req_json["Subject Public key"]
+        RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]
+        req_json["Subject Public key"] = RSA_key_Shortened
+
+        lock_key = req_json["Credential"]["lock key"]["value"]
+        lock_key_shortened = lock_key[:8] + "...." + lock_key[-8:]
+        req_json["Credential"]["lock key"]["value"] = lock_key_shortened
+
+        issuer_signature = req_json["IssuerSignature"]
+        issuer_signature_short = issuer_signature[:8] + "...." + issuer_signature[-8:]
+        req_json["IssuerSignature"] = issuer_signature_short
 
         mbox.showinfo("Result", json.dumps(req_json, indent=4))
 
@@ -288,7 +305,7 @@ class App():
             _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
             reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
-        mbox.showinfo("Result", aux_str)
+        mbox.showinfo("Result", "Unlock keys requests retrieved")
 
     def sendUnlockKey(self):
         global Lock_key_list, lock_key_Selection, lock_key_menu
@@ -306,12 +323,13 @@ class App():
 
         eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
 
-        unlock_key_int = cv.mul_point(bankPrivateECKey, eph_pub_key).x
-        unlock_key = hex(unlock_key_int)
+        unlock_key = cv.mul_point(bankPrivateECKey, eph_pub_key)
+        comp_key = cv.encode_point(unlock_key).hex()
         print("Hola")
         print(unlock_key)
+        print(comp_key)
 
-        pendingRequests_json = rpcCall("unlockKey", {"DID": "1111", "unlock_key": unlock_key[2:], "lock_key": lock_key_compressed})
+        pendingRequests_json = rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
 
         _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)

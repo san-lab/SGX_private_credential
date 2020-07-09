@@ -52,7 +52,7 @@ class App():
         global ClientRSAkeyPair
 
         root = Tk()
-        root.geometry('330x500')
+        root.geometry('330x540')
 
         root.configure(bg='cyan')
         root.title('User credential wallet')
@@ -90,7 +90,7 @@ class App():
         credential_menu.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b2 = ttk.Button(
-            root, text="Check credential info",
+            root, text="View credential info",
             command=self.check_cred_info)
         b2.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
@@ -117,10 +117,10 @@ class App():
         b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
 
 
-        img_logo = ImageTk.PhotoImage(Image.open(
-            "./images/santander-logo-13.png"))
-        panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=9,sticky=S, pady=(10, 0))
+        #img_logo = ImageTk.PhotoImage(Image.open(
+        #    "./images/santander-logo-13.png"))
+        #panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
+        #panel_logo_1.grid(row=9,sticky=S, pady=(10, 0))
 
         credential_list = getAll("credentials_saved", "credentials")
 
@@ -178,6 +178,16 @@ class App():
         position = int(credentialPosition.split(':')[0])
 
         parsed = memory_credential_list[position]
+
+        RSA_key = parsed["Subject Public key"]
+        RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]
+        parsed["Subject Public key"] = RSA_key_Shortened
+
+        issuer_signature = parsed["IssuerSignature"]
+        issuer_signature_short = issuer_signature[:8] + "...." + issuer_signature[-8:]
+        parsed["IssuerSignature"] = issuer_signature_short
+
+
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
         
     def askNewCredential(self):
