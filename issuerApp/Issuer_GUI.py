@@ -195,13 +195,10 @@ class App():
         credential_request = json.dumps(popOne("credentials_request", "request", position))
         list_waiting_req_memory = getAll("credentials_request", "request")
 
-        #reset dropdown for requests
         _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
         res_json = apiCall("issue3", credential_request)
-        res_json["Issuer name"] = "Santander"
-        res_json["IssuerDID"] = "00042"
 
         res_str = json.dumps(res_json)
 

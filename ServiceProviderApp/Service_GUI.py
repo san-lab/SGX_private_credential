@@ -327,23 +327,16 @@ class App():
         plain_credential = getOne("credentials_serviceP", "plain_credentials", position)
 
         issuer_pubK_comp = plain_credential["Issuer public key"]
-        issuer_pk_x, issuer_pk_y = self.uncompressKey(issuer_pubK_comp)
-        pub_key_point  = Point(issuer_pk_x,issuer_pk_y,cv)
-        issuer_public_key = ECPublicKey(pub_key_point)
-
         issuer_signature = plain_credential["IssuerSignature"]
+        message = plain_credential["Credential"]["Name"] + plain_credential["Credential"]["DID"] + plain_credential["Credential"]["Type"] + plain_credential["Credential"]["value"] + plain_credential["IssuerDID"]
 
-        signed_str = plain_credential["Credential"]["Name"] + plain_credential["Credential"]["DID"] + plain_credential["Credential"]["Type"] + plain_credential["Credential"]["value"]# + plain_credential["IssuerDID"]
+        valid = self.verify(message,issuer_pubK_comp,issuer_signature)
+        print(valid)
+        if valid:
+            mbox.showinfo("Result", "The signature is valid")
+        else:
+            mbox.showinfo("Result", "The signature is not valid")
 
-        m = hashlib.sha512()
-        m.update(signed_str.encode())
-        hashed_str = m.digest()
-
-        signer = ECDSA()
-        verified = signer.verify(hashed_str,bytes.fromhex(issuer_signature),issuer_public_key)
-        print(signed_str)
-        print(verified)
-        mbox.showinfo("Result", "The signature is valid")
 
     def uncompressKey(self,compressedKey):
         global cv
@@ -360,6 +353,32 @@ class App():
 
         recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
         return recoveredXCoord, comp_key_int
+
+    def verify(self,message, pbkey, signature):
+        # sign contains R i s (32 bytes each)
+        # Verify:
+        # R + hash(R+m)Pb == sG
+        keybytes =  bytes.fromhex(pbkey)
+        sigbytes = bytes.fromhex(signature)
+        R = sigbytes[:32]
+        s = sigbytes[32:]
+
+        #calculate the hash
+        h = hashlib.sha256()
+        h.update(R)
+        h.update(message.encode("utf-8"))
+
+        hint = int.from_bytes(h.digest(),"little")
+
+
+        si = int.from_bytes(s, "little")
+        S = cv.mul_point(si,g)
+
+        Rp = cv.decode_point(R)
+        Pb = cv.decode_point(keybytes)
+
+        X = cv.add_point(Rp, cv.mul_point(hint, Pb))
+        return (X.eq(S))
 
 
 
