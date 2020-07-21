@@ -123,7 +123,6 @@ class App():
         #panel_logo_1.grid(row=9,sticky=S, pady=(10, 0))
 
         credential_list = getAll("credentials_saved", "credentials")
-
         aux_str,usable_ids = createIdsAndStringSpecialCase(credential_list)
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
         reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
@@ -155,7 +154,7 @@ class App():
 
         memory_credential_list = getAll("credentials_saved", "credentials")
 
-        new_credential_list = avaliableCredentials_json["result"]["credentials"] # Lista descargada
+        new_credential_list = avaliableCredentials_json["result"]["credentials"]
 
         aux_str,_ = createIdsAndStringSpecialCase(new_credential_list)
         
@@ -172,12 +171,13 @@ class App():
 
     def check_cred_info(self):
         global credentialSelection
-        global memory_credential_list
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
 
-        parsed = memory_credential_list[position]
+        memory_credential_list = getAll("credentials_saved", "credentials")
+        parsed_str = memory_credential_list[position]
+        parsed = json.loads(parsed_str)
 
         RSA_key = parsed["Subject Public key"]
         RSA_key_Shortened = RSA_key[:40] + "...." + RSA_key[-40:]

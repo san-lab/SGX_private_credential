@@ -25,6 +25,7 @@ import uuid
 import base64
 import time
 import requests
+import random
 
 from tkinter import messagebox as mbox
 from datetime import datetime
@@ -32,12 +33,20 @@ from dotenv import load_dotenv
 import os
 from ecpy.curves import Curve, Point
 from ecpy.keys import ECPublicKey, ECPrivateKey
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Hash import SHA256
 
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
+
+class DataIntegrityError(Exception):
+    pass
 
 class App():
     def __init__(self):
@@ -233,8 +242,12 @@ class App():
         data_json["Issuer public key"] = compressedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
-        req_json = res_json = apiCall("submit3", data)
-        req_str = json.dumps(req_json)
+        SGX_json, sessionKey = self.createJson(data)
+        res_json = apiCall("workordersubmit", json.dumps(SGX_json))
+        encrypted_data = res_json["result"]["outData"][0]["data"]
+        req_bytes = self.decrypt(sessionKey, base64.b64decode(encrypted_data.encode('UTF-8')))
+        req_str = req_bytes.decode('UTF-8')
+        req_json = json.loads(req_str)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids_plain)
@@ -347,6 +360,86 @@ class App():
 
         recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
         return recoveredXCoord, comp_key_int
+
+    def createJson(self, data_str):
+        workerId = "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94"
+        
+        data = """{"jsonrpc": "2.0", "method": "WorkerRetrieve", "id": 2, "params": {"workerId": "0042", "workOrderId": "null"}}"""
+
+        res_json = apiCall("workerdetails", data)
+        ClientRSAkeyPair_PEM = res_json["result"]["details"]["workerTypeData"]["encryptionKey"]
+        WorkerRSAPublicKey = RSA.import_key(ClientRSAkeyPair_PEM)
+
+        workOrderId = hex(random.randint(1, 2**64 - 1))
+
+        sessionKey = bytes([0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x01])
+        #sessionKey = get_random_bytes(16)
+        nonce = bytes([0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x02])
+        #nonce = get_random_bytes(16)
+
+        cipher = AES.new(sessionKey, AES.MODE_GCM, nonce)
+        ciphertext, tag = cipher.encrypt_and_digest(str.encode(data_str))
+
+        ciphertext_and_tag = ciphertext + tag
+
+        encryptor = PKCS1_OAEP.new(WorkerRSAPublicKey,hashAlgo=SHA256)
+        enc_session_key = encryptor.encrypt(sessionKey)
+
+        json_result = {
+            "jsonrpc": "2.0",
+            "method": "WorkOrderSubmit",
+            "id": 11,
+            "params": {
+                "responseTimeoutMSecs": 6000,
+                "payloadFormat": "JSON-RPC",
+                "resultUri": "resulturi",
+                "notifyUri": "notifyuri",
+                "workOrderId": workOrderId,
+                "workerId": workerId,
+                "workloadId": "dalion-encrypt",
+                "requesterId": "0x1111",
+                "dataEncryptionAlgorithm": "AES-GCM-256",
+                "encryptedSessionKey": base64.b64encode(enc_session_key).decode('UTF-8'),
+                "sessionKeyIv": nonce.hex(),
+                "requesterNonce": "",
+                "encryptedRequestHash": "requesthash",
+                "requesterSignature": "",
+                "inData": [
+                   {"index": 0,
+                    "data": base64.b64encode(ciphertext_and_tag).decode('UTF-8'),
+                   }
+                ]
+            }
+        }
+        #print(json.dumps(json_result, indent=4))
+        return json_result, sessionKey
+
+    def decrypt(self, key, ciphertext: bytes) -> bytes:
+        """Return plaintext for given ciphertext."""
+
+        # Split out the nonce, tag, and encrypted data.
+        nonce = ciphertext[:12]
+        if len(nonce) != 12:
+            raise DataIntegrityError("Cipher text is damaged: invalid nonce length")
+
+        tlen = len(ciphertext) - 16
+        if tlen < 12:
+            raise DataIntegrityError("Cipher text is damaged: too short")
+
+        encrypted = ciphertext[12: tlen]
+        tag = ciphertext[tlen:]
+        if len(tag) != 16:
+            raise DataIntegrityError("Cipher text is damaged: invalid tag length")
+
+        # Construct AES cipher, with old nonce.
+        cipher = AES.new(key, AES.MODE_GCM, nonce)
+
+        # Decrypt and verify.
+        try:
+            plaintext = cipher.decrypt_and_verify(encrypted, tag)  # type: ignore
+        except ValueError as e:
+            raise DataIntegrityError("Cipher text is damaged: {}".format(e))
+        return plaintext
 
 def main():
     App()

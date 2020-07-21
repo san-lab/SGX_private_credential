@@ -20,8 +20,6 @@ def rpcCall(method, parameters=None):
     else:
         data["params"] = [parameters]
 
-    print(data)
-
     response = requests.post(
             RPC_SERVER_ENDPOINT, data=json.dumps(data))
     return response.json()
@@ -30,7 +28,6 @@ def apiCall(verb, data, pickHeader=None):
 
     response = requests.get(
             API_SERVER_ENDPOINT + verb, data=data)
-    
     responseJSON = response.json()
     if pickHeader != None:
         responseJSON[pickHeader] = response.headers.get(pickHeader)
