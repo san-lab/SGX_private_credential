@@ -244,9 +244,12 @@ class App():
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         SGX_json, sessionKey = self.createJson(data)
         res_json = apiCall("workordersubmit", json.dumps(SGX_json))
+        print(json.dumps(res_json))
         encrypted_data = res_json["result"]["outData"][0]["data"]
         req_bytes = self.decrypt(sessionKey, base64.b64decode(encrypted_data.encode('UTF-8')))
         req_str = req_bytes.decode('UTF-8')
+        print("Req str")
+        print(req_str)
         req_json = json.loads(req_str)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
