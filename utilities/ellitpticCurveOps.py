@@ -19,3 +19,6 @@ def createKeyPair():
     ephPrivK = getRandomNumber()
     ephPubK = cv.mul_point(ephPrivK, g)
     return [ephPrivK, ephPubK.x, ephPubK.y]
+
+def gettT(privK, pubKX, pubKY):
+    Point(pubKX,pubKY,cv)

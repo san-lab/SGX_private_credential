@@ -47,6 +47,8 @@ from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
 from utilities.communicationToRPC import rpcCall, apiCall
 
+from utilities.ellitpticCurveOps import createKeyPair
+
 class DataIntegrityError(Exception):
     pass
 
@@ -56,11 +58,12 @@ class App():
         global root
         global Presentation_List, presentationSelection, presentation_menu
         global PreWithKey_list, preWithKeySelection, preWithKey_menu
+        global KeyInvoice_list, keyInvoiceSelection, keyInvoice_menu
         global Plain_list, plainSelection, plain_menu
         global cv, g,p,q
 
         root = Tk()
-        root.geometry('330x540')
+        root.geometry('330x600')
 
         root.configure(bg='green')
         root.title('Bankia app')
@@ -72,6 +75,10 @@ class App():
 
         Presentation_list = [
         ""
+        ]
+
+        KeyInvoice_list = [
+        "Invoice 1"
         ]
 
         PreWithKey_list = [
@@ -103,37 +110,53 @@ class App():
             command=self.askUnlockKey)
         b3.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        b3a = ttk.Button(
+            root, text="Retrieve key invoices",
+            command=self.retrieveKeyInvoices)
+        b3a.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        keyInvoiceSelection = StringVar(root)
+        keyInvoiceSelection.set(KeyInvoice_list[0]) # default value
+
+        keyInvoice_menu = OptionMenu(root, keyInvoiceSelection, *KeyInvoice_list)
+        keyInvoice_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        b3b = ttk.Button(
+            root, text="Pay key invoice",
+            command=self.payInvoice)
+        b3b.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
+
         b4 = ttk.Button(
             root, text="Retrieve pending unlock keys",
             command=self.retrievePendingUnlock)
-        b4.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         preWithKeySelection = StringVar(root)
         preWithKeySelection.set(PreWithKey_list[0]) # default value
 
         preWithKey_menu = OptionMenu(root, preWithKeySelection, *PreWithKey_list)
-        preWithKey_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
+        preWithKey_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b5 = ttk.Button(
             root, text="Decrypt presentation",
             command=self.decryptPresent)
-        b5.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b5.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         plainSelection = StringVar(root)
         plainSelection.set(Plain_list[0]) # default value
 
         plain_menu = OptionMenu(root, plainSelection, *Plain_list)
-        plain_menu.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+        plain_menu.grid(row=11, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b6 = ttk.Button(
             root, text="View plain presentation info",
             command=self.checkInfoPlain)
-        b6.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b6.grid(row=12, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b7 = ttk.Button(
             root, text="Validate signature",
             command=self.validateSignature)
-        b7.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b7.grid(row=13, sticky='ew', pady=(11, 7), padx=(25, 0))
 
 
         #img_logo = ImageTk.PhotoImage(Image.open(
@@ -206,9 +229,17 @@ class App():
         position = int(presentationPosition.split(':')[0])
         enc_credential = getOne("credentials_serviceP", "encrypted_credentials", position)
 
-        pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"]})
+        #pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"]})
+        keyPair = createKeyPair()
+        pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"], "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
 
         mbox.showinfo("Result", "Unlock key request sent")
+
+    def retrieveKeyInvoices(self):
+        mbox.showinfo("Result", "Invoices retrieved")
+
+    def payInvoice(self):
+        mbox.showinfo("Result", "Invoice payed:" + KeyInvoice_list[0])
 
     def retrievePendingUnlock(self):
         global PreWithKey_list, preWithKeySelection, preWithKey_menu

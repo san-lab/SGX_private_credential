@@ -46,10 +46,11 @@ class App():
         global Request_list, requestSelection, request_menu
         global Response_list, responseSelection, response_menu
         global Lock_key_list, lock_key_Selection, lock_key_menu
+        global Payment_list
         global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
         root = Tk()
-        root.geometry('330x540')
+        root.geometry('330x600')
 
         root.configure(bg='red2')
         root.title('Issuer credential app')
@@ -75,6 +76,10 @@ class App():
         ]
 
         Lock_key_list = [
+        ""
+        ]
+
+        Payment_list = [
         ""
         ]
 
@@ -131,15 +136,39 @@ class App():
             root, lock_key_Selection, *Lock_key_list)
         lock_key_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
 
-        b4 = ttk.Button(
-            root, text="Retrieve and send unlock key",
-            command=self.sendUnlockKey)
-        b4.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
+        b4a = ttk.Button(
+            root, text="Send key invoice",
+            command=self.sendInvoice)
+        b4a.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
 
-        img_logo = ImageTk.PhotoImage(Image.open(
-            "./images/santander-logo-13.png"))
-        panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
+        b4b = ttk.Button(
+            root, text="Retrieve key payments",
+            command=self.retrievePayments)
+        b4b.grid(row=11, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        payment_Selection = StringVar(root)
+        payment_Selection.set(Payment_list[0])  # default value
+
+        payment_menu = OptionMenu(
+            root, payment_Selection, *Payment_list)
+        payment_menu.grid(row=12, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        b5 = ttk.Button(
+            root, text="Settle payment and commit key",
+            command=self.settlePaymentAndCommitKey)
+        b5.grid(row=13, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+        b5 = ttk.Button(
+            root, text="Check balance",
+            command=self.checkBalance)
+        b5.grid(row=14, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+
+
+        # img_logo = ImageTk.PhotoImage(Image.open(
+        #     "./images/santander-logo-13.png"))
+        # panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
+        # panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
 
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
@@ -288,7 +317,6 @@ class App():
         global Lock_key_list, lock_key_Selection, lock_key_menu
 
         pendingLockKeys_json = rpcCall("pendingLockKeys")
-
         setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
 
         list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
@@ -304,13 +332,22 @@ class App():
 
         mbox.showinfo("Result", "Unlock keys requests retrieved")
 
-    def sendUnlockKey(self):
+    def sendInvoice(self):
+        mbox.showinfo("Result", "Invoice sent for lock key: key 1")
+
+    def retrievePayments(self):
+        mbox.showinfo("Result", "Payments retrieved")
+
+    def checkBalance(self):
+        mbox.showinfo("Result", "Your balance is 1")
+
+    def settlePaymentAndCommitKey(self):
         global Lock_key_list, lock_key_Selection, lock_key_menu
         global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
 
         lock_keyPosition = lock_key_Selection.get()
-        position = int(lock_keyPosition.split(':')[0])
+        position = int(lock_keyPosition.split(':')[0]) #TODO fix this
 
         lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
         lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
@@ -322,7 +359,6 @@ class App():
 
         unlock_key = cv.mul_point(bankPrivateECKey, eph_pub_key)
         comp_key = cv.encode_point(unlock_key).hex()
-        print("Hola")
         print(unlock_key)
         print(comp_key)
 
