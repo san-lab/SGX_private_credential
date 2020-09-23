@@ -1,6 +1,8 @@
 import json
+import os
 
-RELATIVE_FILE_PATH = "../dao/"
+print(os.path.dirname(os.path.abspath(__file__)))
+RELATIVE_FILE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 def getAll(fileName, subName=None):
     data_file = open(RELATIVE_FILE_PATH + fileName + ".json", "r")

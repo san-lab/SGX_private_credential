@@ -78,7 +78,7 @@ class App():
         ]
 
         KeyInvoice_list = [
-        "Invoice 1"
+        ""
         ]
 
         PreWithKey_list = [
@@ -89,80 +89,19 @@ class App():
         ""
         ]
 
-        b1 = ttk.Button(
-            root, text="Retrieve user presentations",
-            command=self.retrieveUserCredentials)
-        b1.grid(row=1, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        presentationSelection = StringVar(root)
-        presentationSelection.set(Presentation_list[0]) # default value
-
-        presentation_menu = OptionMenu(root, presentationSelection, *Presentation_list)
-        presentation_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b2 = ttk.Button(
-            root, text="View encrypted presentation info",
-            command=self.checkInfoEnc)
-        b2.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b3 = ttk.Button(
-            root, text="Ask for unlock key",
-            command=self.askUnlockKey)
-        b3.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b3a = ttk.Button(
-            root, text="Retrieve key invoices",
-            command=self.retrieveKeyInvoices)
-        b3a.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        keyInvoiceSelection = StringVar(root)
-        keyInvoiceSelection.set(KeyInvoice_list[0]) # default value
-
-        keyInvoice_menu = OptionMenu(root, keyInvoiceSelection, *KeyInvoice_list)
-        keyInvoice_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b3b = ttk.Button(
-            root, text="Pay key invoice",
-            command=self.payInvoice)
-        b3b.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b4 = ttk.Button(
-            root, text="Retrieve pending unlock keys",
-            command=self.retrievePendingUnlock)
-        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        preWithKeySelection = StringVar(root)
-        preWithKeySelection.set(PreWithKey_list[0]) # default value
-
-        preWithKey_menu = OptionMenu(root, preWithKeySelection, *PreWithKey_list)
-        preWithKey_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b5 = ttk.Button(
-            root, text="Decrypt presentation",
-            command=self.decryptPresent)
-        b5.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        plainSelection = StringVar(root)
-        plainSelection.set(Plain_list[0]) # default value
-
-        plain_menu = OptionMenu(root, plainSelection, *Plain_list)
-        plain_menu.grid(row=11, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b6 = ttk.Button(
-            root, text="View plain presentation info",
-            command=self.checkInfoPlain)
-        b6.grid(row=12, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b7 = ttk.Button(
-            root, text="Validate signature",
-            command=self.validateSignature)
-        b7.grid(row=13, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-
-        #img_logo = ImageTk.PhotoImage(Image.open(
-        #    "./images/santander-logo-13.png"))
-        #panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        #panel_logo_1.grid(row=11,sticky=S, pady=(10, 0))
+        self.button("Retrieve user presentations", 1, self.retrieveUserCredentials)
+        presentationSelection, presentation_menu = self.multipleSelect(Presentation_list, 2)
+        self.button("View encrypted presentation info", 3, self.checkInfoEnc)
+        self.button("Ask for unlock key", 4, self.askUnlockKey)
+        self.button("Retrieve key invoices", 5, self.retrieveKeyInvoices)
+        keyInvoiceSelection, keyInvoice_menu = self.multipleSelect(KeyInvoice_list, 6)
+        self.button("Pay key invoice", 7, self.payInvoice)
+        self.button("Retrieve pending unlock keys", 8, self.retrievePendingUnlock)       
+        preWithKeySelection, preWithKey_menu = self.multipleSelect(PreWithKey_list, 9)
+        self.button("Decrypt presentation", 10, self.decryptPresent) 
+        plainSelection, plain_menu = self.multipleSelect(Plain_list, 11)
+        self.button("View plain presentation info", 12, self.checkInfoPlain) 
+        self.button("Validate signature", 13, self.validateSignature) 
 
         enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
 
@@ -180,6 +119,20 @@ class App():
         reloadOptionMenu(plainSelection, plain_menu, usable_ids)
 
         root.mainloop()
+
+    def button(self, bText, bRow, bFunc):
+        b = ttk.Button(
+            root, text=bText,
+            command=bFunc)
+        b.grid(row=bRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+    def multipleSelect(self, sList, sRow):
+        selection = StringVar(root)
+        selection.set(sList[0]) # default value
+        menu = OptionMenu(root, selection, *sList)
+        menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+        return selection, menu
+
 
     def retrieveUserCredentials(self):
         global Presentation_List, presentationSelection, presentation_menu

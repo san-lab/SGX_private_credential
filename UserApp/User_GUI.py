@@ -57,7 +57,7 @@ class App():
         root.configure(bg='cyan')
         root.title('User credential wallet')
 
-        ClientRSAkeyPair_PEM = open("client.key", "r").read()
+        ClientRSAkeyPair_PEM = open(os.path.dirname(os.path.abspath(__file__)) + '/' + "client.key", "r").read()
         ClientRSAkeyPair = RSA.import_key(ClientRSAkeyPair_PEM)
 
         Credential_list = [
