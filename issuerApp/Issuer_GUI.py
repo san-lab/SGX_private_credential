@@ -30,14 +30,13 @@ from tkinter import messagebox as mbox
 from datetime import datetime
 from dotenv import load_dotenv
 import os
-from ecpy.curves import Curve, Point
-from ecpy.keys import ECPublicKey, ECPrivateKey
 
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
+from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv
 
 class App():
     def __init__(self):
@@ -47,21 +46,16 @@ class App():
         global Response_list, responseSelection, response_menu
         global Lock_key_list, lock_key_Selection, lock_key_menu
         global Payment_list
-        global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
+        global bankPrivateECKey, compressedPublicECKey, packedPublicECKey
 
         root = Tk()
         root.geometry('330x600')
-
         root.configure(bg='red2')
         root.title('Issuer credential app')
 
-        cv = Curve.get_curve("Ed25519")
-        g = cv.generator
-        p = cv.field
-        q = cv.order
         bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636
-        bankPublicECKey = cv.mul_point(bankPrivateECKey, g)
-        compressedPublicECKey = cv.encode_point(bankPublicECKey).hex()
+        compressedPublicECKey = getCompressedPubFromPriv(bankPrivateECKey)
+        packedPublicECKey = getPackedPubFromPriv(bankPrivateECKey)
 
         Credential_list = [
         ""
@@ -83,93 +77,20 @@ class App():
         ""
         ]
 
-
-        b0 = ttk.Button(
-            root, text="Retrieve credential request",
-            command=self.requestRetrieve)
-        b0.grid(row=1, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        requestSelection = StringVar(root)
-        requestSelection.set(Request_list[0])  # default value
-
-        request_menu = OptionMenu(root, requestSelection, *Request_list)
-        request_menu.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b1 = ttk.Button(
-            root, text="Generate credential",
-            command=self.generateCredential)
-        b1.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        credentialSelection = StringVar(root)
-        credentialSelection.set(Credential_list[0])  # default value
-
-        credential_menu = OptionMenu(
-            root, credentialSelection, *Credential_list)
-        credential_menu.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b2 = ttk.Button(
-            root, text="Encrypt credential on SGX",
-            command=self.encryptOnSgx)
-        b2.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        responseSelection = StringVar(root)
-        responseSelection.set(Response_list[0])  # default value
-
-        response_menu = OptionMenu(
-            root, responseSelection, *Response_list)
-        response_menu.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b3 = ttk.Button(
-            root, text="      Send credential to customer     ",
-            command=self.sendCredential)
-        b3.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b4 = ttk.Button(
-            root, text="Retrieve unlock request",
-            command=self.retrieveLockKeys)
-        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        lock_key_Selection = StringVar(root)
-        lock_key_Selection.set(Lock_key_list[0])  # default value
-
-        lock_key_menu = OptionMenu(
-            root, lock_key_Selection, *Lock_key_list)
-        lock_key_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b4a = ttk.Button(
-            root, text="Send key invoice",
-            command=self.sendInvoice)
-        b4a.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b4b = ttk.Button(
-            root, text="Retrieve key payments",
-            command=self.retrievePayments)
-        b4b.grid(row=11, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        payment_Selection = StringVar(root)
-        payment_Selection.set(Payment_list[0])  # default value
-
-        payment_menu = OptionMenu(
-            root, payment_Selection, *Payment_list)
-        payment_menu.grid(row=12, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b5 = ttk.Button(
-            root, text="Settle payment and commit key",
-            command=self.settlePaymentAndCommitKey)
-        b5.grid(row=13, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b5 = ttk.Button(
-            root, text="Check balance",
-            command=self.checkBalance)
-        b5.grid(row=14, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-
-
-        # img_logo = ImageTk.PhotoImage(Image.open(
-        #     "./images/santander-logo-13.png"))
-        # panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        # panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
-
+        self.button("Retrieve credential request", 1, self.requestRetrieve)
+        requestSelection, request_menu = self.multipleSelect(Request_list, 2)
+        self.button("Generate credential", 3, self.generateCredential)
+        credentialSelection, credential_menu = self.multipleSelect(Credential_list, 4)
+        self.button("Encrypt credential on SGX", 5, self.encryptOnSgx)
+        responseSelection, response_menu = self.multipleSelect(Response_list, 6)
+        self.button("Send credential to customer", 7, self.sendCredential)
+        self.button("Retrieve unlock request", 8, self.retrieveLockKeys)
+        lock_key_Selection, lock_key_menu = self.multipleSelect(Lock_key_list, 9)
+        self.button("Send key invoice", 10, self.sendInvoice)
+        self.button("Retrieve key payments", 11, self.retrievePayments)
+        payment_Selection, payment_menu = self.multipleSelect(Payment_list, 12)
+        self.button("Settle payment and commit key", 13, self.settlePaymentAndCommitKey)
+        self.button("Check balance", 14, self.checkBalance)
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
@@ -192,6 +113,19 @@ class App():
         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
         root.mainloop()
+
+    def button(self, bText, bRow, bFunc):
+        b = ttk.Button(
+            root, text=bText,
+            command=bFunc)
+        b.grid(row=bRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+    def multipleSelect(self, sList, sRow):
+        selection = StringVar(root)
+        selection.set(sList[0]) # default value
+        menu = OptionMenu(root, selection, *sList)
+        menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+        return selection, menu
 
     def requestRetrieve(self):
         global Request_list, requestSelection, request_menu
@@ -258,11 +192,10 @@ class App():
 
         data = popOne("credentials_issuer", "plain_credentials", position)
         data_json = json.loads(data)
-        print(compressedPublicECKey)
-        data_json["Issuer public key"] = compressedPublicECKey
+        data_json["Issuer public key"] = packedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
-        req_json = res_json = apiCall("submit3", data)
+        req_json = apiCall("encryptbn256", data)
         req_str = json.dumps(req_json)
 
         _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
@@ -343,7 +276,7 @@ class App():
 
     def settlePaymentAndCommitKey(self):
         global Lock_key_list, lock_key_Selection, lock_key_menu
-        global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
+        global bankPrivateECKey, bankPublicECKey, cv
 
 
         lock_keyPosition = lock_key_Selection.get()
@@ -353,36 +286,18 @@ class App():
         lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
 
         lock_key_compressed = lock_key_json["key"]
-        lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
 
-        eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
 
-        unlock_key = cv.mul_point(bankPrivateECKey, eph_pub_key)
-        comp_key = cv.encode_point(unlock_key).hex()
-        print(unlock_key)
+        comp_key = calculateSymKey(lock_key_compressed, bankPrivateECKey)
+
         print(comp_key)
 
-        pendingRequests_json = rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
+        rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
 
         _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
         mbox.showinfo("Result", "Unlock key sent")
-
-    def uncompressKey(self,compressedKey):
-        compKey_bytes = bytes.fromhex(compressedKey)
-        compKey_sign = compKey_bytes[31] & 128
-
-        compKey_barray = bytearray(compKey_bytes)
-
-        compKey_barray[31] &= 127
-        compKey_barray.reverse()
-
-        comp_key_rev = bytes(compKey_barray)
-        comp_key_int = int.from_bytes(comp_key_rev, "big")
-
-        recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
-        return recoveredXCoord, comp_key_int
 
 def main():
     App()

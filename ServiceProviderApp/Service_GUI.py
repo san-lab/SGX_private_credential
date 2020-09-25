@@ -16,41 +16,32 @@
 
 # -*- coding: utf-8 -*-
 
-from tkinter import *
-from tkinter import ttk, _setit
-from PIL import ImageTk, Image
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-import json
-import uuid
 import base64
-import time
-import hashlib
-import requests
 import binascii
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
-from Crypto.Hash import SHA256
-from Crypto.Cipher import AES
-from ecpy.curves import Curve, Point
-from ecpy.keys import ECPublicKey, ECPrivateKey
-from ecpy.ecdsa      import ECDSA
-import Padding
-
-from tkinter import messagebox as mbox
-from datetime import datetime
-from dotenv import load_dotenv
+import json
 import os
-
 import sys
+import time
+import uuid
+from datetime import datetime
+from tkinter import *
+from tkinter import _setit
+from tkinter import messagebox as mbox
+from tkinter import ttk
+from tkinter.filedialog import askopenfilename, asksaveasfilename
+
+import Padding
+import requests
+from dotenv import load_dotenv
+from PIL import Image, ImageTk
+
 sys.path.append('../')
-from dao.dao import getAll, setOne, setMultiple, popOne, getOne
-from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
-from utilities.communicationToRPC import rpcCall, apiCall
-
-from utilities.ellitpticCurveOps import createKeyPair
-
-class DataIntegrityError(Exception):
-    pass
+from dao.dao import getAll, getOne, popOne, setMultiple, setOne
+from utilities.communicationToRPC import apiCall, rpcCall
+from utilities.cryptoOps import createKeyPair, decrypt, verify
+from utilities.GUI_Utilities import (createIdsAndString,
+                                     createIdsAndStringSpecialCase,
+                                     reloadOptionMenu)
 
 
 class App():
@@ -64,14 +55,8 @@ class App():
 
         root = Tk()
         root.geometry('330x600')
-
         root.configure(bg='green')
         root.title('Bankia app')
-
-        cv = Curve.get_curve("Ed25519")
-        g = cv.generator
-        p = cv.field
-        q = cv.order
 
         Presentation_list = [
         ""
@@ -101,23 +86,12 @@ class App():
         self.button("Decrypt presentation", 10, self.decryptPresent) 
         plainSelection, plain_menu = self.multipleSelect(Plain_list, 11)
         self.button("View plain presentation info", 12, self.checkInfoPlain) 
-        self.button("Validate signature", 13, self.validateSignature) 
+        self.button("Validate signature", 13, self.validateSignature)
 
-        enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
-
-        _, usable_ids = createIdsAndString(enc_credential_list, False, "Type", "Name", " for ", subName="Credential")
-        reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
-
-        enc_credentia_withK_list = getAll("credentials_serviceP", "encrypted_credentials_withK")
-
-        _, usable_ids = createIdsAndString(enc_credentia_withK_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
-        reloadOptionMenu(preWithKeySelection, preWithKey_menu, usable_ids)
-
-        plain_credential_list = getAll("credentials_serviceP", "plain_credentials")
-
-        _, usable_ids = createIdsAndString(plain_credential_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(decrypted)")
-        reloadOptionMenu(plainSelection, plain_menu, usable_ids)
-
+        self.loadLists("credentials_serviceP", "encrypted_credentials", None, presentationSelection, presentation_menu)
+        #TODO Load list invoices
+        self.loadLists("credentials_serviceP", "encrypted_credentials_withK", "(with key)", preWithKeySelection, preWithKey_menu)
+        self.loadLists("credentials_serviceP", "plain_credentials", "(decrypted)", plainSelection, plain_menu)
         root.mainloop()
 
     def button(self, bText, bRow, bFunc):
@@ -132,6 +106,12 @@ class App():
         menu = OptionMenu(root, selection, *sList)
         menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
         return selection, menu
+
+    def loadLists(self, fileName, subName, sEndingLabel, selection, menu):
+        tempList = getAll(fileName, subName)
+        _, usable_ids = createIdsAndString(tempList, False, "Type", "Name", " for ", subName="Credential", endingLabel=sEndingLabel)
+        reloadOptionMenu(selection, menu, usable_ids)
+
 
 
     def retrieveUserCredentials(self):
@@ -235,7 +215,7 @@ class App():
         cipher_bytes = base64.b64decode(cipher_b64)
         key_hex = enc_credential_withK["Credential"]["unlock key"]
         key_bytes = bytes.fromhex(key_hex)
-        plain_bytes = self.decrypt(key_bytes, cipher_bytes)
+        plain_bytes = decrypt(key_bytes, cipher_bytes)
         plaintext = str(plain_bytes, "utf-8")
 
         enc_credential_withK["IssuerSignature"] = plaintext
@@ -252,34 +232,6 @@ class App():
         reloadOptionMenu(preWithKeySelection, preWithKey_menu, usable_ids)
 
         mbox.showinfo("Result", "Presentation decrypted")
-
-    def decrypt(self, key, ciphertext: bytes) -> bytes:
-        """Return plaintext for given ciphertext."""
-
-        # Split out the nonce, tag, and encrypted data.
-        nonce = ciphertext[:12]
-        if len(nonce) != 12:
-            raise DataIntegrityError("Cipher text is damaged: invalid nonce length")
-
-        tlen = len(ciphertext) - 16
-        if tlen < 12:
-            raise DataIntegrityError("Cipher text is damaged: too short")
-
-        encrypted = ciphertext[12: tlen]
-        tag = ciphertext[tlen:]
-        if len(tag) != 16:
-            raise DataIntegrityError("Cipher text is damaged: invalid tag length")
-
-        # Construct AES cipher, with old nonce.
-        cipher = AES.new(key, AES.MODE_GCM, nonce)
-
-        # Decrypt and verify.
-        try:
-            plaintext = cipher.decrypt_and_verify(encrypted, tag)  # type: ignore
-        except ValueError as e:
-            raise DataIntegrityError("Cipher text is damaged: {}".format(e))
-        return plaintext
-        
 
     def checkInfoPlain(self):
         global plainSelection
@@ -314,56 +266,12 @@ class App():
         issuer_signature = plain_credential["IssuerSignature"]
         message = plain_credential["Credential"]["Name"] + plain_credential["Credential"]["DID"] + plain_credential["Credential"]["Type"] + plain_credential["Credential"]["value"] + plain_credential["IssuerDID"]
 
-        valid = self.verify(message,issuer_pubK_comp,issuer_signature)
+        valid = verify(message,issuer_pubK_comp,issuer_signature)
         print(valid)
         if valid:
             mbox.showinfo("Result", "The signature is valid")
         else:
             mbox.showinfo("Result", "The signature is not valid")
-
-
-    def uncompressKey(self,compressedKey):
-        global cv
-        compKey_bytes = bytes.fromhex(compressedKey)
-        compKey_sign = compKey_bytes[31] & 128
-
-        compKey_barray = bytearray(compKey_bytes)
-
-        compKey_barray[31] &= 127
-        compKey_barray.reverse()
-
-        comp_key_rev = bytes(compKey_barray)
-        comp_key_int = int.from_bytes(comp_key_rev, "big")
-
-        recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
-        return recoveredXCoord, comp_key_int
-
-    def verify(self,message, pbkey, signature):
-        # sign contains R i s (32 bytes each)
-        # Verify:
-        # R + hash(R+m)Pb == sG
-        keybytes =  bytes.fromhex(pbkey)
-        sigbytes = bytes.fromhex(signature)
-        R = sigbytes[:32]
-        s = sigbytes[32:]
-
-        #calculate the hash
-        h = hashlib.sha256()
-        h.update(R)
-        h.update(message.encode("utf-8"))
-
-        hint = int.from_bytes(h.digest(),"little")
-
-
-        si = int.from_bytes(s, "little")
-        S = cv.mul_point(si,g)
-
-        Rp = cv.decode_point(R)
-        Pb = cv.decode_point(keybytes)
-
-        X = cv.add_point(Rp, cv.mul_point(hint, Pb))
-        return (X.eq(S))
-
 
 
 def main():
