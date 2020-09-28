@@ -45,7 +45,7 @@ class App():
         global Credential_list, credentialSelection, credential_menu
         global Request_list, requestSelection, request_menu
         global Response_list, responseSelection, response_menu
-        global Lock_key_list, lock_key_Selection, lock_key_menu
+        global digEmbasy_list, digEmbasy_Selection, digEmbasy_menu
         global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
         root = Tk()
@@ -62,6 +62,11 @@ class App():
         bankPublicECKey = cv.mul_point(bankPrivateECKey, g)
         compressedPublicECKey = cv.encode_point(bankPublicECKey).hex()
 
+        bankPrivateECKeyTemporal = 8922796882388619604127911146068705796569681654940873967836428543013949233637
+        bankPublicECKeyTemporal = cv.mul_point(bankPrivateECKeyTemporal, g)
+        compressedPublicECKeyTemporal = cv.encode_point(bankPublicECKeyTemporal).hex()
+
+
         Credential_list = [
         ""
         ]
@@ -74,7 +79,7 @@ class App():
         ""
         ]
 
-        Lock_key_list = [
+        digEmbasy_list = [
         ""
         ]
 
@@ -119,27 +124,22 @@ class App():
             command=self.sendCredential)
         b3.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
 
-        b4 = ttk.Button(
-            root, text="Retrieve unlock request",
-            command=self.retrieveLockKeys)
-        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+        digEmbasy_Selection = StringVar(root)
+        digEmbasy_Selection.set(digEmbasy_list[0])  # default value
 
-        lock_key_Selection = StringVar(root)
-        lock_key_Selection.set(Lock_key_list[0])  # default value
-
-        lock_key_menu = OptionMenu(
-            root, lock_key_Selection, *Lock_key_list)
-        lock_key_menu.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
+        digEmbasy_menu = OptionMenu(
+            root, digEmbasy_Selection, *digEmbasy_list)
+        digEmbasy_menu.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b4 = ttk.Button(
-            root, text="Retrieve and send unlock key",
-            command=self.sendUnlockKey)
-        b4.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
+            root, text="Set new key on digital embasy",
+            command=self.updateEmbassyKey)
+        b4.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=10, sticky=S, pady=(10, 0))
 
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
@@ -157,10 +157,9 @@ class App():
         _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
-        list_waiting_lock_keys = getAll("lock_keys_issuer", "lock_keys")
+        list_digitalEmbassys = getAll("digital_Embassys.json", "digEmbassysNames")
         
-        _, usable_ids = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
-        reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
+        reloadOptionMenu(digEmbasy_Selection, digEmbasy_menu, list_digitalEmbassys)
 
         root.mainloop()
 
@@ -229,8 +228,8 @@ class App():
 
         data = popOne("credentials_issuer", "plain_credentials", position)
         data_json = json.loads(data)
-        print(compressedPublicECKey)
-        data_json["Issuer public key"] = compressedPublicECKey
+        print(compressedPublicECKeyTemporal)
+        data_json["Issuer public key"] = compressedPublicECKeyTemporal
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         req_json = res_json = apiCall("submit3", data)
@@ -284,69 +283,69 @@ class App():
 
         mbox.showinfo("Result", "Credential sent to user")
 
-    def retrieveLockKeys(self):
-        global Lock_key_list, lock_key_Selection, lock_key_menu
+    def updateEmbassyKey(self):
+        print("Send privateKey " + bankPrivateECKeyTemporal)
 
-        pendingLockKeys_json = rpcCall("pendingLockKeys")
+    # def retrieveLockKeys(self):
+    #     global Lock_key_list, lock_key_Selection, lock_key_menu
 
-        setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
+    #     pendingLockKeys_json = rpcCall("pendingLockKeys")
 
-        list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
-        complete_list_lock_keys = getAll("lock_keys_issuer", "lock_keys")
+    #     setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
 
-        aux_str, _ = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
-        if aux_str == "":
-            aux_str = "No requests pending"
+    #     list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
+    #     complete_list_lock_keys = getAll("lock_keys_issuer", "lock_keys")
 
-        else:
-            _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
-            reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
+    #     aux_str, _ = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
+    #     if aux_str == "":
+    #         aux_str = "No requests pending"
 
-        mbox.showinfo("Result", "Unlock keys requests retrieved")
+    #     else:
+    #         _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
+    #         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
-    def sendUnlockKey(self):
-        global Lock_key_list, lock_key_Selection, lock_key_menu
-        global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
+    #     mbox.showinfo("Result", "Unlock keys requests retrieved")
+
+    # def sendUnlockKey(self):
+    #     global Lock_key_list, lock_key_Selection, lock_key_menu
+    #     global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
 
 
-        lock_keyPosition = lock_key_Selection.get()
-        position = int(lock_keyPosition.split(':')[0])
+    #     lock_keyPosition = lock_key_Selection.get()
+    #     position = int(lock_keyPosition.split(':')[0])
 
-        lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
-        lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
+    #     lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
+    #     lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
 
-        lock_key_compressed = lock_key_json["key"]
-        lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
+    #     lock_key_compressed = lock_key_json["key"]
+    #     lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
 
-        eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
+    #     eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
 
-        unlock_key = cv.mul_point(bankPrivateECKey, eph_pub_key)
-        comp_key = cv.encode_point(unlock_key).hex()
-        print("Hola")
-        print(unlock_key)
-        print(comp_key)
+    #     unlock_key = cv.mul_point(bankPrivateECKeyTemporal, eph_pub_key)
+    #     comp_key = cv.encode_point(unlock_key).hex()
 
-        pendingRequests_json = rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
+    #     pendingRequests_json = rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
 
-        _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
-        reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
+    #     _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
+    #     reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
-        mbox.showinfo("Result", "Unlock key sent")
+    #     mbox.showinfo("Result", "Unlock key sent")
 
-    def uncompressKey(self,compressedKey):
-        compKey_bytes = bytes.fromhex(compressedKey)
-        compKey_sign = compKey_bytes[31] & 128
+    # def uncompressKey(self,compressedKey):
+    #     compKey_bytes = bytes.fromhex(compressedKey)
+    #     compKey_sign = compKey_bytes[31] & 128
 
-        compKey_barray = bytearray(compKey_bytes)
+    #     compKey_barray = bytearray(compKey_bytes)
 
-        compKey_barray[31] &= 127
-        compKey_barray.reverse()
+    #     compKey_barray[31] &= 127
+    #     compKey_barray.reverse()
 
-        comp_key_rev = bytes(compKey_barray)
-        comp_key_int = int.from_bytes(comp_key_rev, "big")
+    #     comp_key_rev = bytes(compKey_barray)
+    #     comp_key_int = int.from_bytes(comp_key_rev, "big")
 
-        recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
-        return recoveredXCoord, comp_key_int
+    #     recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
+    #     return recoveredXCoord, comp_key_int
 
 def main():
     App()

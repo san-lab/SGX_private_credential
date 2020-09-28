@@ -70,6 +70,35 @@ class App():
         p = cv.field
         q = cv.order
 
+        SGX_req_json = {
+        "jsonrpc": "2.0", 
+        "method": "WorkOrderSubmit", 
+        "id": 11, 
+        "params": {
+            "responseTimeoutMSecs": 6000, 
+            "payloadFormat": "JSON-RPC", 
+            "resultUri": "resulturi", 
+            "noifyUri": "notifyuri", 
+            "workOrderId": "", 
+            "workerId": "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94", 
+            "workloadId": "68656172742d646973656173652d6576616c5f6b6565705374617465", 
+            "requesterId": "0x3456", 
+            "dataEncryptionAlgorithm": "AES-GCM-256", 
+            "encryptedSessionKey": "", 
+            "sessionKeyIv": "", 
+            "requesterNonce": "", 
+            "encryptedRequestHash": "", 
+            "requesterSignature": "", 
+            "inData": [
+                {"index": 1, 
+                "data": "", 
+                "encryptedDataEncryptionKey": "", 
+                "iv": ""}
+            ], 
+            "verifyingKey": ""
+            }
+        }
+
         Presentation_list = [
         ""
         ]
@@ -104,7 +133,7 @@ class App():
         b3.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
 
         b4 = ttk.Button(
-            root, text="Retrieve pending unlock keys",
+            root, text="Retrieve last unlock keys",
             command=self.retrievePendingUnlock)
         b4.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
 
@@ -206,7 +235,11 @@ class App():
         position = int(presentationPosition.split(':')[0])
         enc_credential = getOne("credentials_serviceP", "encrypted_credentials", position)
 
-        pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"]})
+        temp_SGX_json = SGX_req_json
+        temp_SGX_json["params"]["workOrderId"] = hex(random.randint(1, 2**64 - 1))
+        temp_SGX_json["params"]["inData"][0]["data"] = "key:" + enc_credential["Credential"]["lock key"]["value"]
+        #TODO Encrypt before sending
+        SGX_response = apiCallSgxHard(temp_SGX_json)
 
         mbox.showinfo("Result", "Unlock key request sent")
 

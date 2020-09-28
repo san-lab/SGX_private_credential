@@ -3,6 +3,7 @@ import json
 
 RPC_SERVER_ENDPOINT = 'http://localhost:3000/jsonrpc'
 API_SERVER_ENDPOINT = 'http://40.120.61.169:8080/'
+API_SERVER_ENDPOINT_SGX_HARD = 'http://40.120.61.169:8200/'
 
 data = {
     "jsonrpc": "2.0",
@@ -30,6 +31,17 @@ def apiCall(verb, data, pickHeader=None):
 
     response = requests.get(
             API_SERVER_ENDPOINT + verb, data=data)
+    
+    responseJSON = response.json()
+    if pickHeader != None:
+        responseJSON[pickHeader] = response.headers.get(pickHeader)
+
+    return responseJSON
+
+def apiCallSgxHard(data, pickHeader=None):
+
+    response = requests.get(
+            API_SERVER_ENDPOINT_SGX_HARD, data=data)
     
     responseJSON = response.json()
     if pickHeader != None:
