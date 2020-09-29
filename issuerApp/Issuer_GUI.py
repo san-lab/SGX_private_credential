@@ -36,7 +36,7 @@ sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
-from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv
+from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair
 
 class App():
     def __init__(self):
@@ -266,7 +266,22 @@ class App():
         mbox.showinfo("Result", "Unlock keys requests retrieved")
 
     def sendInvoice(self):
-        mbox.showinfo("Result", "Invoice sent for lock key: key 1")
+        # Calculate t, T
+        # 
+
+        lock_keyPosition = lock_key_Selection.get()
+        position = int(lock_keyPosition.split(':')[0]) #TODO fix this
+
+        lock_key_json = getOne("lock_keys_issuer", "lock_keys", position)
+
+        lock_key_packed = lock_key_json["key"]
+        unlockKey, TUnlockKey = calulateUnlockAndMaskedUnlock(bankPrivateECKey, lock_key_packed)
+
+        print(unlockKey, TUnlockKey)
+        keyPair = createKeyPair()
+        rpcCall("invoice", {"DID":125, "invoiceNumber": "456", "masked_unlock_key": TUnlockKey.x, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
+
+        mbox.showinfo("Result", "Invoice sent. Number: 456")
 
     def retrievePayments(self):
         mbox.showinfo("Result", "Payments retrieved")

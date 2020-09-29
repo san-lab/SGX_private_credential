@@ -169,6 +169,10 @@ class App():
         mbox.showinfo("Result", "Unlock key request sent")
 
     def retrieveKeyInvoices(self):
+        invoices_json = rpcCall("pendingInvoices")
+
+        print(invoices_json)
+
         mbox.showinfo("Result", "Invoices retrieved")
 
     def payInvoice(self):

@@ -127,6 +127,11 @@ def getPackedPubFromPriv(privECKey):
 
     return (paddedX + paddedY)
 
+def calulateUnlockAndMaskedUnlock(privECKey, lockKeyPacked):
+    lockKey = Point(int(lockKeyPacked[:64], 16), int(lockKeyPacked[64:], 16), cv)
+    unlockKey = cv.mul_point(privECKey, lockKey)
+    return (unlockKey, cv.mul_point(unlockKey.x, g))
+
 
 # bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636 % p
 
