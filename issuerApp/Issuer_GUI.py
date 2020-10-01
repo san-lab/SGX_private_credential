@@ -47,6 +47,8 @@ class App():
         global Response_list, responseSelection, response_menu
         global digEmbasy_list, digEmbasy_Selection, digEmbasy_menu
         global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
+        global compressedPublicECKeyTemporal
+        global SGX_req_json, SGX_req_workerRet
 
         root = Tk()
         root.geometry('330x540')
@@ -65,6 +67,37 @@ class App():
         bankPrivateECKeyTemporal = 8922796882388619604127911146068705796569681654940873967836428543013949233637
         bankPublicECKeyTemporal = cv.mul_point(bankPrivateECKeyTemporal, g)
         compressedPublicECKeyTemporal = cv.encode_point(bankPublicECKeyTemporal).hex()
+
+        SGX_req_json = {
+        "jsonrpc": "2.0", 
+        "method": "WorkOrderSubmit", 
+        "id": 11, 
+        "params": {
+            "responseTimeoutMSecs": 6000, 
+            "payloadFormat": "JSON-RPC", 
+            "resultUri": "resulturi", 
+            "notifyUri": "notifyuri", 
+            "workOrderId": "", 
+            "workerId": "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94", 
+            "workloadId": "", 
+            "requesterId": "0x3456", 
+            "dataEncryptionAlgorithm": "AES-GCM-256", 
+            "encryptedSessionKey": "", 
+            "sessionKeyIv": "", 
+            "requesterNonce": "", 
+            "encryptedRequestHash": "", 
+            "requesterSignature": "", 
+            "inData": [
+                {"index": 1, 
+                "data": "", 
+                "encryptedDataEncryptionKey": "", 
+                "iv": ""}
+            ]
+            }
+        }
+
+        SGX_req_workerRet = {"jsonrpc": "2.0", "method": "WorkerRetrieve", "id": 2, "params": {"workerId": "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94"}}
+
 
 
         Credential_list = [
@@ -136,10 +169,15 @@ class App():
             command=self.updateEmbassyKey)
         b4.grid(row=9, sticky='ew', pady=(11, 7), padx=(25, 0))
 
+        b4 = ttk.Button(
+            root, text="Get balance on embassy",
+            command=self.getBalance)
+        b4.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
+
         img_logo = ImageTk.PhotoImage(Image.open(
             "./images/santander-logo-13.png"))
         panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        panel_logo_1.grid(row=10, sticky=S, pady=(10, 0))
+        panel_logo_1.grid(row=11, sticky=S, pady=(10, 0))
 
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
@@ -157,7 +195,7 @@ class App():
         _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
-        list_digitalEmbassys = getAll("digital_Embassys.json", "digEmbassysNames")
+        list_digitalEmbassys = getAll("digital_Embassys", "digEmbassysInfo")
         
         reloadOptionMenu(digEmbasy_Selection, digEmbasy_menu, list_digitalEmbassys)
 
@@ -222,14 +260,14 @@ class App():
     def encryptOnSgx(self):
         global Response_list, responseSelection, response_menu
         global Credential_list, credentialSelection, credential_menu
+        global compressedPublicECKey
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
 
         data = popOne("credentials_issuer", "plain_credentials", position)
         data_json = json.loads(data)
-        print(compressedPublicECKeyTemporal)
-        data_json["Issuer public key"] = compressedPublicECKeyTemporal
+        data_json["Issuer public key"] = compressedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         req_json = res_json = apiCall("submit3", data)
@@ -283,69 +321,32 @@ class App():
 
         mbox.showinfo("Result", "Credential sent to user")
 
-    def updateEmbassyKey(self):
-        print("Send privateKey " + bankPrivateECKeyTemporal)
+    def updateEmbassyKey(self): #TODO change key by bankPrivateECKeyTemporal
+        global digEmbasy_list, digEmbasy_Selection, digEmbasy_menu
 
-    # def retrieveLockKeys(self):
-    #     global Lock_key_list, lock_key_Selection, lock_key_menu
+        embassyPosition = digEmbasy_Selection.get()
+        position = int(embassyPosition.split(':')[0])
 
-    #     pendingLockKeys_json = rpcCall("pendingLockKeys")
+        embassyInfo = popOne("digital_Embassys", "digEmbassysInfo", position)
+        name = embassyInfo["Name"]
 
-    #     setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
+        SGX_worker_info = apiCallSgxHard(SGX_req_workerRet)
 
-    #     list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
-    #     complete_list_lock_keys = getAll("lock_keys_issuer", "lock_keys")
+        temp_SGX_json = SGX_req_json
+        workloadId = "heart-disease-eval"
+        workOrderId = "0x" + uuid.uuid4().hex[:16]
+        temp_SGX_json["params"]["workOrderId"] = workOrderId
+        temp_SGX_json["params"]["workloadId"] = workloadId.encode("UTF-8").hex()
+        #temp_SGX_json["params"]["inData"][0]["data"] = "key:" + enc_credential["Credential"]["lock key"]["value"]
+        temp_SGX_json["params"]["inData"][0]["data"] = "updateKey:"+bankPrivateECKeyTemporal
+        SGX_json_enc, enc_session_json = encryptSGXWorkOrder(temp_SGX_json, SGX_worker_info)
+        SGX_response = apiCallSgxHard(json.loads(SGX_json_enc))
 
-    #     aux_str, _ = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
-    #     if aux_str == "":
-    #         aux_str = "No requests pending"
+        print("Response update digital embassy")
+        print(SGX_response)
 
-    #     else:
-    #         _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
-    #         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
-
-    #     mbox.showinfo("Result", "Unlock keys requests retrieved")
-
-    # def sendUnlockKey(self):
-    #     global Lock_key_list, lock_key_Selection, lock_key_menu
-    #     global bankPrivateECKey, bankPublicECKey, compressedPublicECKey, cv
-
-
-    #     lock_keyPosition = lock_key_Selection.get()
-    #     position = int(lock_keyPosition.split(':')[0])
-
-    #     lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
-    #     lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
-
-    #     lock_key_compressed = lock_key_json["key"]
-    #     lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
-
-    #     eph_pub_key  = Point(lock_key_x,lock_key_y,cv)
-
-    #     unlock_key = cv.mul_point(bankPrivateECKeyTemporal, eph_pub_key)
-    #     comp_key = cv.encode_point(unlock_key).hex()
-
-    #     pendingRequests_json = rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
-
-    #     _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
-    #     reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
-
-    #     mbox.showinfo("Result", "Unlock key sent")
-
-    # def uncompressKey(self,compressedKey):
-    #     compKey_bytes = bytes.fromhex(compressedKey)
-    #     compKey_sign = compKey_bytes[31] & 128
-
-    #     compKey_barray = bytearray(compKey_bytes)
-
-    #     compKey_barray[31] &= 127
-    #     compKey_barray.reverse()
-
-    #     comp_key_rev = bytes(compKey_barray)
-    #     comp_key_int = int.from_bytes(comp_key_rev, "big")
-
-    #     recoveredXCoord = cv.x_recover(comp_key_int, (compKey_sign>0))
-    #     return recoveredXCoord, comp_key_int
+    def getBalance(self):
+        print("TODO Balance")
 
 def main():
     App()

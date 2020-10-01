@@ -39,12 +39,9 @@ def apiCall(verb, data, pickHeader=None):
     return responseJSON
 
 def apiCallSgxHard(data, pickHeader=None):
+    response = requests.post(
+            API_SERVER_ENDPOINT_SGX_HARD, json=data)
 
-    response = requests.get(
-            API_SERVER_ENDPOINT_SGX_HARD, data=data)
-    
     responseJSON = response.json()
-    if pickHeader != None:
-        responseJSON[pickHeader] = response.headers.get(pickHeader)
 
     return responseJSON

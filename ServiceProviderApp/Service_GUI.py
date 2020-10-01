@@ -45,7 +45,8 @@ import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
-from utilities.communicationToRPC import rpcCall, apiCall
+from utilities.communicationToRPC import rpcCall, apiCall, apiCallSgxHard
+from crypto_local.encForSgx import encryptSGXWorkOrder
 
 class DataIntegrityError(Exception):
     pass
@@ -58,6 +59,7 @@ class App():
         global PreWithKey_list, preWithKeySelection, preWithKey_menu
         global Plain_list, plainSelection, plain_menu
         global cv, g,p,q
+        global SGX_req_workerRet, SGX_req_json
 
         root = Tk()
         root.geometry('330x540')
@@ -78,10 +80,10 @@ class App():
             "responseTimeoutMSecs": 6000, 
             "payloadFormat": "JSON-RPC", 
             "resultUri": "resulturi", 
-            "noifyUri": "notifyuri", 
+            "notifyUri": "notifyuri", 
             "workOrderId": "", 
             "workerId": "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94", 
-            "workloadId": "68656172742d646973656173652d6576616c5f6b6565705374617465", 
+            "workloadId": "", 
             "requesterId": "0x3456", 
             "dataEncryptionAlgorithm": "AES-GCM-256", 
             "encryptedSessionKey": "", 
@@ -94,10 +96,11 @@ class App():
                 "data": "", 
                 "encryptedDataEncryptionKey": "", 
                 "iv": ""}
-            ], 
-            "verifyingKey": ""
+            ]
             }
         }
+
+        SGX_req_workerRet = {"jsonrpc": "2.0", "method": "WorkerRetrieve", "id": 2, "params": {"workerId": "0b03616a46ea9cf574f3f8eedc93a62c691a60dbd3783427c0243bacfe5bba94"}}
 
         Presentation_list = [
         ""
@@ -165,11 +168,6 @@ class App():
         b7.grid(row=10, sticky='ew', pady=(11, 7), padx=(25, 0))
 
 
-        #img_logo = ImageTk.PhotoImage(Image.open(
-        #    "./images/santander-logo-13.png"))
-        #panel_logo_1 = Label(root, image=img_logo, borderwidth=0)
-        #panel_logo_1.grid(row=11,sticky=S, pady=(10, 0))
-
         enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
 
         _, usable_ids = createIdsAndString(enc_credential_list, False, "Type", "Name", " for ", subName="Credential")
@@ -235,11 +233,18 @@ class App():
         position = int(presentationPosition.split(':')[0])
         enc_credential = getOne("credentials_serviceP", "encrypted_credentials", position)
 
+        SGX_worker_info = apiCallSgxHard(SGX_req_workerRet)
+
         temp_SGX_json = SGX_req_json
-        temp_SGX_json["params"]["workOrderId"] = hex(random.randint(1, 2**64 - 1))
-        temp_SGX_json["params"]["inData"][0]["data"] = "key:" + enc_credential["Credential"]["lock key"]["value"]
-        #TODO Encrypt before sending
-        SGX_response = apiCallSgxHard(temp_SGX_json)
+        workloadId = "heart-disease-eval"
+        workOrderId = "0x" + uuid.uuid4().hex[:16]
+        temp_SGX_json["params"]["workOrderId"] = workOrderId
+        temp_SGX_json["params"]["workloadId"] = workloadId.encode("UTF-8").hex()
+        lock_key_compressed = enc_credential["Credential"]["lock key"]["value"]
+        lock_key_x, lock_key_y = self.uncompressKey(lock_key_compressed)
+        temp_SGX_json["params"]["inData"][0]["data"] = "unlock:"+lock_key_x+"-"+lock_key_y
+        SGX_json_enc, enc_session_json = encryptSGXWorkOrder(temp_SGX_json, SGX_worker_info)
+        SGX_response = apiCallSgxHard(json.loads(SGX_json_enc))
 
         mbox.showinfo("Result", "Unlock key request sent")
 

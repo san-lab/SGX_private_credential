@@ -17,5 +17,5 @@ deleteAll("credentials_serviceP", "encrypted_credentials_withK")
 deleteAll("credentials_serviceP", "plain_credentials")
 print(getAll("credentials_serviceP"))
 
-deleteAll("lock_keys_issuer", "lock_keys")
-print(getAll("lock_keys_issuer"))
+deleteAll("digital_Embassys", "digEmbassysInfo")
+print(getAll("digital_Embassys"))
