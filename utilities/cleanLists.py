@@ -19,3 +19,7 @@ print(getAll("credentials_serviceP"))
 
 deleteAll("lock_keys_issuer", "lock_keys")
 print(getAll("lock_keys_issuer"))
+
+deleteAll("invoices_serviceP", "invoices")
+deleteAll("invoices_serviceP", "ephPrivKeys")
+print(getAll("invoices_serviceP"))

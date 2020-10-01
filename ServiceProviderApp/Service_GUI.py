@@ -38,7 +38,7 @@ from PIL import Image, ImageTk
 sys.path.append('../')
 from dao.dao import getAll, getOne, popOne, setMultiple, setOne
 from utilities.communicationToRPC import apiCall, rpcCall
-from utilities.cryptoOps import createKeyPair, decrypt, verify
+from utilities.cryptoOps import createKeyPair, decrypt, verify, calculatePL
 from utilities.GUI_Utilities import (createIdsAndString,
                                      createIdsAndStringSpecialCase,
                                      reloadOptionMenu)
@@ -89,7 +89,12 @@ class App():
         self.button("Validate signature", 13, self.validateSignature)
 
         self.loadLists("credentials_serviceP", "encrypted_credentials", None, presentationSelection, presentation_menu)
-        #TODO Load list invoices
+
+        key_invoice_requests = getAll("invoices_serviceP", "invoices")
+        
+        _, usable_ids = createIdsAndString(key_invoice_requests, False, "invoiceNumber", "DID", " for ")
+        reloadOptionMenu(keyInvoiceSelection, keyInvoice_menu, usable_ids)
+
         self.loadLists("credentials_serviceP", "encrypted_credentials_withK", "(with key)", preWithKeySelection, preWithKey_menu)
         self.loadLists("credentials_serviceP", "plain_credentials", "(decrypted)", plainSelection, plain_menu)
         root.mainloop()
@@ -125,13 +130,8 @@ class App():
         list_waiting_presentations = presentations_json["result"]["presentations"]
         complete_list_presentations = getAll("credentials_serviceP", "encrypted_credentials")
 
-        aux_str, _ = createIdsAndString(list_waiting_presentations, False, "Type", "Name", " for ", subName="Credential")
-        if aux_str == "":
-            aux_str = "No presentations pending"
-
-        else:
-            _, usable_ids = createIdsAndString(complete_list_presentations, False, "Type", "Name", " for ", subName="Credential")
-            reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
+        _, usable_ids = createIdsAndString(complete_list_presentations, False, "Type", "Name", " for ", subName="Credential")
+        reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
 
         mbox.showinfo("Result", "User presentations retrieved")
 
@@ -162,21 +162,42 @@ class App():
         position = int(presentationPosition.split(':')[0])
         enc_credential = getOne("credentials_serviceP", "encrypted_credentials", position)
 
-        #pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"]})
         keyPair = createKeyPair()
-        pendingRequests_json = rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"], "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
+        setOne("invoices_serviceP", "ephPrivKeys", keyPair[0])
+        rpcCall("lockKey", {"DID": "4567", "key": enc_credential["Credential"]["lock key"]["value"], "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
 
         mbox.showinfo("Result", "Unlock key request sent")
 
     def retrieveKeyInvoices(self):
         invoices_json = rpcCall("pendingInvoices")
 
+
+        setMultiple("invoices_serviceP", "invoices", invoices_json["result"]["invoices"]) 
+
+        list_waiting_invoices = invoices_json["result"]["invoices"]
+        complete_list_invoices = getAll("invoices_serviceP", "invoices")
+
+        _, usable_ids = createIdsAndString(complete_list_invoices, False, "invoiceNumber", "DID", " for ")
+        reloadOptionMenu(keyInvoiceSelection, keyInvoice_menu, usable_ids)
+
         print(invoices_json)
 
         mbox.showinfo("Result", "Invoices retrieved")
 
     def payInvoice(self):
-        mbox.showinfo("Result", "Invoice payed:" + KeyInvoice_list[0])
+
+        invoicePosition = keyInvoiceSelection.get()
+        position = int(invoicePosition.split(':')[0])
+
+        invoice_list = getAll("invoices_serviceP", "invoices")
+
+        parsed = invoice_list[position]
+        ephPrivK = getOne("invoices_serviceP", "ephPrivKeys", position)
+        PL = calculatePL(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"], parsed["masked_unlock_keyX"], parsed["masked_unlock_keyY"])
+
+        print(PL)
+
+        mbox.showinfo("Result", "Invoice payed:" + json.dumps(parsed, indent=4))
 
     def retrievePendingUnlock(self):
         global PreWithKey_list, preWithKeySelection, preWithKey_menu

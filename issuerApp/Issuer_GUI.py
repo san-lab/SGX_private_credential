@@ -279,7 +279,7 @@ class App():
 
         print(unlockKey, TUnlockKey)
         keyPair = createKeyPair()
-        rpcCall("invoice", {"DID":125, "invoiceNumber": "456", "masked_unlock_key": TUnlockKey.x, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
+        rpcCall("invoice", {"DID":"125", "invoiceNumber": "456", "masked_unlock_keyX": TUnlockKey.x, "masked_unlock_keyY": TUnlockKey.y, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
 
         mbox.showinfo("Result", "Invoice sent. Number: 456")
 

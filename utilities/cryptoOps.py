@@ -27,6 +27,9 @@ def getRandomNumber():
 def createKeyPair():
     ephPrivK = getRandomNumber()
     ephPubK = cv.mul_point(ephPrivK, g)
+
+    print("KEYPAIR", ephPrivK, ephPubK.x, ephPubK.y)
+
     return [ephPrivK, ephPubK.x, ephPubK.y]
 
 def gettT(privK, pubKX, pubKY):
@@ -132,6 +135,13 @@ def calulateUnlockAndMaskedUnlock(privECKey, lockKeyPacked):
     unlockKey = cv.mul_point(privECKey, lockKey)
     return (unlockKey, cv.mul_point(unlockKey.x, g))
 
+def calculatePL(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):
+
+    print("PUBKEY", issEphPubKX, issEphPubKY)
+
+    data = str(cv.mul_point(spEphPrivK, Point(issEphPubKX, issEphPubKY, cv)).x)
+    spHash = int(sha3.sha3_224(data.encode('utf-8')).hexdigest(), 16)
+    return cv.add_point(cv.mul_point(spHash, g), Point(Tx, Ty, cv)).x
 
 # bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636 % p
 
