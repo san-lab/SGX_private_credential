@@ -9,10 +9,6 @@ import time
 import json
 from web3 import Web3
 
-cv = Curve.get_curve('bn256')
-g = cv.generator
-q = cv.order
-
 httpAddress = 'https://rinkeby.infura.io/v3/f2a8581c640340758bead17199084148'
 AssetUnlockerContractAddress =  '0xe70dc1c9bc6b3b488f1cbc5f48f6772a47a174e5'
 private_key = '0x2659d295cf455bc033e5b5ec59afc67057425af8a71a694a5f59ad0e6b333f0c'
@@ -27,7 +23,7 @@ RELATIVE_FILE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 w3 = Web3(Web3.HTTPProvider(httpAddress))
 address = Web3.toChecksumAddress(AssetUnlockerContractAddress)
 
-with open(RELATIVE_FILE_PATH + "smartContracts/AssetUnlockerABI.json") as f:
+with open(RELATIVE_FILE_PATH + "AssetUnlockerABI.json") as f:
     ABI = json.load(f)
 
 myContract = w3.eth.contract(address=address, abi=ABI)
@@ -48,7 +44,7 @@ def payKeyInvoice(challenge):
     while True:
         try:
             transactionResult = w3.eth.getTransactionReceipt(result)
-            print("Point commited to blockchain: ", PL)
+            print("Point commited to blockchain: ", challenge)
             break
         except:
             print('transaction not mined yet, waiting 5 seconds...')
@@ -58,7 +54,7 @@ def payKeyInvoice(challenge):
     transactionLink = "https://rinkeby.etherscan.io/tx/" + transactionResult['transactionHash'].hex()
     print(transactionLink)
 
-def settlePayKeyInvoice(challenge, solution)
+def settlePayKeyInvoice(challenge, solution):
     nonceIss = w3.eth.getTransactionCount(account_addressIss)
     builtTransaction = myContract.functions.unlockAsset(challenge, solution).buildTransaction({
         'chainId': 4,

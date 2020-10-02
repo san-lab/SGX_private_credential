@@ -112,6 +112,11 @@ class App():
         _, usable_ids = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
+        list_payment = getAll("payments_issuer", "payments")
+        
+        _, usable_ids = createIdsAndString(list_payment, False, "invoiceNumber", "challenge", " for ")
+        reloadOptionMenu(payment_Selection, payment_menu, usable_ids)
+
         root.mainloop()
 
     def button(self, bText, bRow, bFunc):
@@ -284,6 +289,8 @@ class App():
         mbox.showinfo("Result", "Invoice sent. Number: 456")
 
     def retrievePayments(self):
+        payments_json = rpcCall("pendingPayments")
+        print(payments_json)
         mbox.showinfo("Result", "Payments retrieved")
 
     def checkBalance(self):

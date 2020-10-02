@@ -8,6 +8,12 @@ lock_keys = {"lock_keys": []} #TODO requesterDID
 unlock_keys = {"unlock_keys": []} #{"DID":124, "unlock_key": "234bca", "lock_key": "ab432"}
 
 invoices = {"invoices": []} # {"DID":125, "invoiceNumber": "456" "masked_unlock_key": "234bca", "ephKeyX": "1236", "ephKeyY": "7543"}
+payments = {"payments": []}
+
+def getPayments():
+    returnedValue = copy.deepcopy(payments)
+    payments["payments"] = []
+    return returnedValue
 
 def getPendingRequests():
     returnedValue = copy.deepcopy(requests)
@@ -71,3 +77,8 @@ def pushNewInvoice(req):
     print(req)
     invoices["invoices"].append(req)
     print(invoices)
+
+def pushNewPayment(req):
+    print(req)
+    payments["payments"].append(req)
+    print(payments)

@@ -38,10 +38,11 @@ from PIL import Image, ImageTk
 sys.path.append('../')
 from dao.dao import getAll, getOne, popOne, setMultiple, setOne
 from utilities.communicationToRPC import apiCall, rpcCall
-from utilities.cryptoOps import createKeyPair, decrypt, verify, calculatePL
+from utilities.cryptoOps import createKeyPair, decrypt, verify, calculateChallenge
 from utilities.GUI_Utilities import (createIdsAndString,
                                      createIdsAndStringSpecialCase,
                                      reloadOptionMenu)
+from utilities.assetUnlock import payKeyInvoice
 
 
 class App():
@@ -174,7 +175,6 @@ class App():
 
         setMultiple("invoices_serviceP", "invoices", invoices_json["result"]["invoices"]) 
 
-        list_waiting_invoices = invoices_json["result"]["invoices"]
         complete_list_invoices = getAll("invoices_serviceP", "invoices")
 
         _, usable_ids = createIdsAndString(complete_list_invoices, False, "invoiceNumber", "DID", " for ")
@@ -193,9 +193,12 @@ class App():
 
         parsed = invoice_list[position]
         ephPrivK = getOne("invoices_serviceP", "ephPrivKeys", position)
-        PL = calculatePL(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"], parsed["masked_unlock_keyX"], parsed["masked_unlock_keyY"])
+        challenge = calculateChallenge(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"], parsed["masked_unlock_keyX"], parsed["masked_unlock_keyY"])
 
-        print(PL)
+        print(challenge)
+
+        payKeyInvoice(challenge)
+        rpcCall("payment", {"DID": "4567", "invoiceNumber": parsed["invoiceNumber"], "challenge": challenge})
 
         mbox.showinfo("Result", "Invoice payed:" + json.dumps(parsed, indent=4))
 
@@ -280,7 +283,6 @@ class App():
 
     def validateSignature(self):
         global Plain_list, plainSelection, plain_menu
-        global cv
 
         plainKPosition = plainSelection.get()
         position = int(plainKPosition.split(':')[0])

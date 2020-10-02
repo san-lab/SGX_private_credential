@@ -135,7 +135,7 @@ def calulateUnlockAndMaskedUnlock(privECKey, lockKeyPacked):
     unlockKey = cv.mul_point(privECKey, lockKey)
     return (unlockKey, cv.mul_point(unlockKey.x, g))
 
-def calculatePL(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):
+def calculateChallenge(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):
 
     print("PUBKEY", issEphPubKX, issEphPubKY)
 

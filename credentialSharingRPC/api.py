@@ -1,5 +1,5 @@
 from jsonrpc import dispatcher
-from storage import pushNewRequest, getPendingRequests, getCredentials, pushNewCredential, pushNewLockKey, pushNewUnlockKey, getLockKeys, getUnlockKeys, pushNewPresentation, getPresentations, getInvoices, pushNewInvoice
+from storage import pushNewRequest, getPendingRequests, getCredentials, pushNewCredential, pushNewLockKey, pushNewUnlockKey, getLockKeys, getUnlockKeys, pushNewPresentation, getPresentations, getInvoices, pushNewInvoice, getPayments, pushNewPayment
 
 def serviceLookUp():
     return {'type': ' ring signature service', 'curve': 'cosa', 'hashing algortithm': 'keccak'}
@@ -28,6 +28,10 @@ def acceptNewInvoice(data):
     pushNewInvoice(data)
     return {'message': 'Invoice has been sent', 'invoice_number': data["invoiceNumber"]}
 
+def acceptNewPayment(data):
+    pushNewPayment(data)
+    return {'message': 'Payment has been sent', 'invoice_number': data["invoiceNumber"]}
+
 def showNewCredentialRequest():
     return getPendingRequests()
 
@@ -46,6 +50,9 @@ def showNewUnlockKeys():
 def showNewInvoices():
     return getInvoices()
 
+def showNewPayments():
+    return getPayments()
+
 dispatcher['serviceLookUp'] = serviceLookUp
 dispatcher['credentialRequest'] = acceptNewCredentialRequest
 dispatcher['credential'] = acceptNewCredential
@@ -53,9 +60,11 @@ dispatcher['presentation'] = acceptNewPresentation
 dispatcher['lockKey'] = acceptNewLockKey
 dispatcher['unlockKey'] = acceptNewUnlockKey
 dispatcher['invoice'] = acceptNewInvoice
+dispatcher['payment'] = acceptNewPayment
 dispatcher['pendingRequests'] = showNewCredentialRequest
 dispatcher['pendingCredentials'] = showNewCredentials
 dispatcher['pendingPresentations'] = showNewPresentations
 dispatcher['pendingLockKeys'] = showNewLockKeys
 dispatcher['pendingUnlockKeys'] = showNewUnlockKeys
 dispatcher['pendingInvoices'] = showNewInvoices
+dispatcher['pendingPayments'] = showNewPayments
