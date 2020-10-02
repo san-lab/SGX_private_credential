@@ -82,5 +82,5 @@ def settlePayKeyInvoice(challenge, solution):
 def checkBalance():
     return myContract.caller.checkBalance(account_addressIss, account_address)
 
-def getKeyFromBlockchain():
-    return myContract.caller.getKey(PL.x)
+def getKeyFromBlockchain(challenge):
+    return myContract.caller.getKey(challenge)
