@@ -194,10 +194,8 @@ class App():
         parsed = invoice_list[position]
         ephPrivK = getOne("invoices_serviceP", "ephPrivKeys", position)
         challenge = calculateChallenge(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"], parsed["masked_unlock_keyX"], parsed["masked_unlock_keyY"])
-
-        print(challenge)
-
-        payKeyInvoice(challenge)
+        
+        #payKeyInvoice(challenge)
         rpcCall("payment", {"DID": "4567", "invoiceNumber": parsed["invoiceNumber"], "challenge": challenge})
 
         mbox.showinfo("Result", "Invoice payed:" + json.dumps(parsed, indent=4))

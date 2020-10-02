@@ -45,7 +45,7 @@ class App():
         global Request_list, requestSelection, request_menu
         global Response_list, responseSelection, response_menu
         global Lock_key_list, lock_key_Selection, lock_key_menu
-        global Payment_list
+        global Payment_list, payment_Selection, payment_menu
         global bankPrivateECKey, compressedPublicECKey, packedPublicECKey
 
         root = Tk()
@@ -252,7 +252,7 @@ class App():
         mbox.showinfo("Result", "Credential sent to user")
 
     def retrieveLockKeys(self):
-        global Lock_key_list, lock_key_Selection, lock_key_menu
+        global lock_key_Selection, lock_key_menu
 
         pendingLockKeys_json = rpcCall("pendingLockKeys")
         setMultiple("lock_keys_issuer", "lock_keys", pendingLockKeys_json["result"]["lock_keys"]) 
@@ -272,7 +272,6 @@ class App():
 
     def sendInvoice(self):
         # Calculate t, T
-        # 
 
         lock_keyPosition = lock_key_Selection.get()
         position = int(lock_keyPosition.split(':')[0]) #TODO fix this
@@ -285,13 +284,29 @@ class App():
         print(unlockKey, TUnlockKey)
         keyPair = createKeyPair()
         rpcCall("invoice", {"DID":"125", "invoiceNumber": "456", "masked_unlock_keyX": TUnlockKey.x, "masked_unlock_keyY": TUnlockKey.y, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
+        #Habria que guardar este invoice?
 
         mbox.showinfo("Result", "Invoice sent. Number: 456")
 
     def retrievePayments(self):
+        global payment_Selection, payment_menu
+
         payments_json = rpcCall("pendingPayments")
-        print(payments_json)
-        mbox.showinfo("Result", "Payments retrieved")
+        setMultiple("payments_issuer", "payments", payments_json["result"]["payments"])
+
+        list_waiting_payments = payments_json["result"]["payments"]
+        complete_list_payments = getAll("payments_issuer", "payments")
+
+        aux_str, _ = createIdsAndString(list_waiting_payments, False, "challenge", "DID", " for ")
+        if aux_str == "":
+            aux_str = "No requests pending"
+
+        else:
+            _, usable_ids = createIdsAndString(complete_list_payments, False, "challenge", "DID", " for ")
+            reloadOptionMenu(payment_Selection, payment_menu, usable_ids)
+            aux_str = "Payments retrieved"
+
+        mbox.showinfo("Result", aux_str)
 
     def checkBalance(self):
         mbox.showinfo("Result", "Your balance is 1")
