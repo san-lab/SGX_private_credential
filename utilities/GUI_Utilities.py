@@ -26,7 +26,7 @@ def createIdsAndString(list_to_traverse, json_string, field1, field2, link, endi
         if (subName != None):
             elem_json = elem_json[subName]
         print(elem_json)
-        new_id = str(i) + ": " + elem_json[field1] + link + elem_json[field2]
+        new_id = str(i) + ": " + str(elem_json[field1]) + link + str(elem_json[field2])
         if (endingLabel != None):
             new_id += endingLabel + "\n"
         else:
