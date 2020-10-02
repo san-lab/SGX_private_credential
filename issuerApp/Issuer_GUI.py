@@ -283,8 +283,10 @@ class App():
 
         print(unlockKey, TUnlockKey)
         keyPair = createKeyPair()
-        rpcCall("invoice", {"DID":"125", "invoiceNumber": "456", "masked_unlock_keyX": TUnlockKey.x, "masked_unlock_keyY": TUnlockKey.y, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]})
-        #Habria que guardar este invoice?
+        newInvoice = {"DID":"125", "invoiceNumber": "456", "masked_unlock_keyX": TUnlockKey.x, "masked_unlock_keyY": TUnlockKey.y, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]}
+        rpcCall("invoice", newInvoice)
+        setOne("payments_issuer", "invoices", newInvoice)
+        setOne("payments_issuer", "unlock_keys", unlockKey)
 
         mbox.showinfo("Result", "Invoice sent. Number: 456")
 
@@ -312,29 +314,10 @@ class App():
         mbox.showinfo("Result", "Your balance is 1")
 
     def settlePaymentAndCommitKey(self):
-        global Lock_key_list, lock_key_Selection, lock_key_menu
-        global bankPrivateECKey, bankPublicECKey, cv
+        global Payment_list, payment_Selection, payment_menu
 
-
-        lock_keyPosition = lock_key_Selection.get()
-        position = int(lock_keyPosition.split(':')[0]) #TODO fix this
-
-        lock_key_json = popOne("lock_keys_issuer", "lock_keys", position)
-        lock_keys_list = getAll("lock_keys_issuer", "lock_keys")
-
-        lock_key_compressed = lock_key_json["key"]
-
-
-        comp_key = calculateSymKey(lock_key_compressed, bankPrivateECKey)
-
-        print(comp_key)
-
-        rpcCall("unlockKey", {"DID": "7524", "unlock_key": comp_key, "lock_key": lock_key_compressed})
-
-        _, usable_ids = createIdsAndString(lock_keys_list, False, "key", "DID", " for ")
-        reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
-
-        mbox.showinfo("Result", "Unlock key sent")
+        payment_Position = payment_Selection.get()
+        position = int(payment_Position.split(':')[0])
 
 def main():
     App()
