@@ -22,6 +22,7 @@ print(getAll("lock_keys_issuer"))
 
 deleteAll("invoices_serviceP", "invoices")
 deleteAll("invoices_serviceP", "ephPrivKeys")
+deleteAll("invoices_serviceP", "diffieHashes")
 print(getAll("invoices_serviceP"))
 
 deleteAll("payments_issuer", "payments")

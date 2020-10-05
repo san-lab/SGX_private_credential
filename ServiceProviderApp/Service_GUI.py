@@ -38,11 +38,11 @@ from PIL import Image, ImageTk
 sys.path.append('../')
 from dao.dao import getAll, getOne, popOne, setMultiple, setOne
 from utilities.communicationToRPC import apiCall, rpcCall
-from utilities.cryptoOps import createKeyPair, decrypt, verify, calculateChallenge
+from utilities.cryptoOps import createKeyPair, decrypt, verify, calculateChallenge, calculateDiffieHash
 from utilities.GUI_Utilities import (createIdsAndString,
                                      createIdsAndStringSpecialCase,
                                      reloadOptionMenu)
-from utilities.assetUnlock import payKeyInvoice
+from utilities.assetUnlock import payKeyInvoice, getKeyFromBlockchain
 
 
 class App():
@@ -194,6 +194,8 @@ class App():
         parsed = invoice_list[position]
         ephPrivK = getOne("invoices_serviceP", "ephPrivKeys", position)
         challenge = calculateChallenge(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"], parsed["masked_unlock_keyX"], parsed["masked_unlock_keyY"])
+        diffieHash = calculateDiffieHash(ephPrivK, parsed["ephKeyX"], parsed["ephKeyY"])
+        setOne("invoices_serviceP", "diffieHashes", diffieHash)
 
         payKeyInvoice(challenge)
         rpcCall("payment", {"DID": "4567", "invoiceNumber": parsed["invoiceNumber"], "challenge": challenge})
@@ -203,24 +205,28 @@ class App():
     def retrievePendingUnlock(self):
         global PreWithKey_list, preWithKeySelection, preWithKey_menu
 
-        challenge_json = rpcCall("pendingChallenges")
-        print(challenge_json)
-        unlock_keys_list = unlock_json["result"]["unlock_keys"]
-        lock_keys = list()
-        unlock_keys = list()
-        for unlock_key in unlock_keys_list:
-            lock_keys.append(unlock_key["lock_key"])
-            unlock_keys.append(unlock_key["unlock_key"])
+        challenges_json = rpcCall("pendingChallenges")
+        diffieHashes_json = getAll("invoices_serviceP", "diffieHashes")
+
+        print(challenges_json)
+        print(diffieHashes_json)
+
+        i = 0
+        unlock_keys_list = []
+        for chall in challenges_json["result"]["challenges"]:
+            maskedUnlockKey = getKeyFromBlockchain(chall)
+            unlock_key = maskedUnlockKey - diffieHashes_json[i]
+            unlock_keys_list.append(unlock_key)
+            i = i + 1
 
         enc_credential_list = getAll("credentials_serviceP", "encrypted_credentials")
 
+        i = 0
         for enc_cred in enc_credential_list:
-            for i in range (0, len(lock_keys)):
-                if enc_cred["Credential"]["lock key"]["value"] == lock_keys[i]:
-                    enc_cred["Credential"]["unlock key"] = unlock_keys[i]
-                    setOne("credentials_serviceP", "encrypted_credentials_withK", enc_cred)
+            enc_cred["Credential"]["unlock key"] = hex(unlock_keys_list[i])[2:]
+            setOne("credentials_serviceP", "encrypted_credentials_withK", enc_cred)
+            i = i + 1
 
- 
         complete_list_withUnlock = getAll("credentials_serviceP", "encrypted_credentials_withK")
 
         _, usable_ids = createIdsAndString(complete_list_withUnlock, False, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
