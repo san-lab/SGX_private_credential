@@ -23,3 +23,8 @@ print(getAll("lock_keys_issuer"))
 deleteAll("invoices_serviceP", "invoices")
 deleteAll("invoices_serviceP", "ephPrivKeys")
 print(getAll("invoices_serviceP"))
+
+deleteAll("payments_issuer", "payments")
+deleteAll("payments_issuer", "invoices")
+deleteAll("payments_issuer", "unlock_keys")
+print(getAll("payments_issuer"))

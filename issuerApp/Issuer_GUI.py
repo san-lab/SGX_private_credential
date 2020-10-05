@@ -36,7 +36,8 @@ sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
-from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair
+from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair, calculateDiffieHash, test
+from utilities.assetUnlock import settlePayKeyInvoice
 
 class App():
     def __init__(self):
@@ -283,10 +284,13 @@ class App():
 
         print(unlockKey, TUnlockKey)
         keyPair = createKeyPair()
+
+        diffieHash = calculateDiffieHash(keyPair[0], lock_key_json["ephKeyX"], lock_key_json["ephKeyY"])
+
         newInvoice = {"DID":"125", "invoiceNumber": "456", "masked_unlock_keyX": TUnlockKey.x, "masked_unlock_keyY": TUnlockKey.y, "ephKeyX": keyPair[1], "ephKeyY": keyPair[2]}
         rpcCall("invoice", newInvoice)
         setOne("payments_issuer", "invoices", newInvoice)
-        setOne("payments_issuer", "unlock_keys", unlockKey)
+        setOne("payments_issuer", "unlock_keys", {"unlockKey": unlockKey, "diffieHash": diffieHash})
 
         mbox.showinfo("Result", "Invoice sent. Number: 456")
 
@@ -318,6 +322,17 @@ class App():
 
         payment_Position = payment_Selection.get()
         position = int(payment_Position.split(':')[0])
+
+        ########
+        payment_json2 = getOne("payments_issuer", "payments", position)
+        payment_json = getOne("payments_issuer", "unlock_keys", position)
+        test(payment_json["unlockKey"], payment_json["diffieHash"],payment_json2["challenge"])
+        #########
+
+        #settlePayKeyInvoice(payment_json)
+
+
+
 
 def main():
     App()

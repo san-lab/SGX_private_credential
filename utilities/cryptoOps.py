@@ -130,10 +130,22 @@ def getPackedPubFromPriv(privECKey):
 
     return (paddedX + paddedY)
 
+def getPackedPubFromPub(publicECKey):
+    paddedX = hex(publicECKey.x)[2:]
+    while len(paddedX) < 64:
+        paddedX = '0' + paddedX
+
+    paddedY = hex(publicECKey.y)[2:]
+    while len(paddedY) < 64:
+        paddedY = '0' + paddedY
+
+    return (paddedX + paddedY)
+
 def calulateUnlockAndMaskedUnlock(privECKey, lockKeyPacked):
     lockKey = Point(int(lockKeyPacked[:64], 16), int(lockKeyPacked[64:], 16), cv)
     unlockKey = cv.mul_point(privECKey, lockKey)
-    return (unlockKey, cv.mul_point(unlockKey.x, g))
+    packedUnlockKey = getPackedPubFromPub(unlockKey)
+    return (packedUnlockKey, cv.mul_point(int(packedUnlockKey,16), g))
 
 def calculateChallenge(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):
 
@@ -142,6 +154,18 @@ def calculateChallenge(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):
     data = str(cv.mul_point(spEphPrivK, Point(issEphPubKX, issEphPubKY, cv)).x)
     spHash = int(sha3.sha3_224(data.encode('utf-8')).hexdigest(), 16)
     return cv.add_point(cv.mul_point(spHash, g), Point(Tx, Ty, cv)).x
+
+def calculateDiffieHash(privK, pubkX, pubkY):
+
+    data = str(cv.mul_point(privK, Point(pubkX, pubkY, cv)).x)
+    return int(sha3.sha3_224(data.encode('utf-8')).hexdigest(), 16)
+
+
+def test (unlockKey , diffieHash, challenge):
+    print("TEST BUENO BUENO")
+    s = int(unlockKey,16) + diffieHash
+    print(cv.mul_point(s, g))
+    print(challenge) # x coord
 
 # bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636 % p
 
