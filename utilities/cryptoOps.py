@@ -80,12 +80,12 @@ def verify(message, pbkey, signature):
 
 
     si = int.from_bytes(s, "little")
-    S = cv.mul_point(si,g)
+    S = cvEd.mul_point(si,g)
 
-    Rp = cv.decode_point(R)
-    Pb = cv.decode_point(keybytes)
+    Rp = cvEd.decode_point(R)
+    Pb = cvEd.decode_point(keybytes)
 
-    X = cv.add_point(Rp, cv.mul_point(hint, Pb))
+    X = cvEd.add_point(Rp, cvEd.mul_point(hint, Pb))
     return (X.eq(S))
 
 
@@ -144,7 +144,12 @@ def getPackedPubFromPub(publicECKey):
 def calulateUnlockAndMaskedUnlock(privECKey, lockKeyPacked):
     lockKey = Point(int(lockKeyPacked[:64], 16), int(lockKeyPacked[64:], 16), cv)
     unlockKey = cv.mul_point(privECKey, lockKey)
-    packedUnlockKey = getPackedPubFromPub(unlockKey)
+    print(hex(unlockKey.x))
+    packedUnlockKey = hex(unlockKey.x)[2:]
+
+    print("Unlock key in issuer side:")
+    print (packedUnlockKey)
+
     return (packedUnlockKey, cv.mul_point(int(packedUnlockKey,16), g))
 
 def calculateChallenge(spEphPrivK, issEphPubKX, issEphPubKY, Tx, Ty):

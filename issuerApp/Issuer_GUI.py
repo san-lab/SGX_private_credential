@@ -90,7 +90,7 @@ class App():
         self.button("Send key invoice", 10, self.sendInvoice)
         self.button("Retrieve key payments", 11, self.retrievePayments)
         payment_Selection, payment_menu = self.multipleSelect(Payment_list, 12)
-        self.button("Settle payment and commit key", 13, self.settlePaymentAndCommitKey)
+        self.button("Claim payment and commit key", 13, self.settlePaymentAndCommitKey)
         self.button("Check balance", 14, self.checkBalance)
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")

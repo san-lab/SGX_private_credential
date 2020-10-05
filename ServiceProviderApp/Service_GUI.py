@@ -246,6 +246,8 @@ class App():
         cipher_b64 = enc_credential_withK["IssuerSignature"]
         cipher_bytes = base64.b64decode(cipher_b64)
         key_hex = enc_credential_withK["Credential"]["unlock key"]
+        while len(key_hex) < 64:
+            key_hex = '0' + key_hex
         key_bytes = bytes.fromhex(key_hex)
         plain_bytes = decrypt(key_bytes, cipher_bytes)
         plaintext = str(plain_bytes, "utf-8")

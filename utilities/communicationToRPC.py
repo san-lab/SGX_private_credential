@@ -35,4 +35,8 @@ def apiCall(verb, data, pickHeader=None):
     if pickHeader != None:
         responseJSON[pickHeader] = response.headers.get(pickHeader)
 
+
+    print("RESPONSE")
+    print(response.headers)
+
     return responseJSON
