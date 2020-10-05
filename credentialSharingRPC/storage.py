@@ -9,6 +9,7 @@ unlock_keys = {"unlock_keys": []} #{"DID":124, "unlock_key": "234bca", "lock_key
 
 invoices = {"invoices": []} # {"DID":125, "invoiceNumber": "456" "masked_unlock_key": "234bca", "ephKeyX": "1236", "ephKeyY": "7543"}
 payments = {"payments": []}
+challenges = {"challenges": []}
 
 def getPayments():
     returnedValue = copy.deepcopy(payments)
@@ -44,6 +45,12 @@ def getInvoices():
     print(invoices)
     returnedValue = copy.deepcopy(invoices)
     invoices["invoices"] = []
+    return returnedValue
+
+def getChallenges():
+    print(challenges)
+    returnedValue = copy.deepcopy(challenges)
+    challenges["challenges"] = []
     return returnedValue
 
 
@@ -82,3 +89,8 @@ def pushNewPayment(req):
     print(req)
     payments["payments"].append(req)
     print(payments)
+
+def pushNewChallenge(req):
+    print(req)
+    challenges["challenges"].append(req)
+    print(challenges)

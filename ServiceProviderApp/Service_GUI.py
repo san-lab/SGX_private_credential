@@ -203,8 +203,8 @@ class App():
     def retrievePendingUnlock(self):
         global PreWithKey_list, preWithKeySelection, preWithKey_menu
 
-        unlock_json = rpcCall("pendingUnlockKeys")
-        print(unlock_json)
+        challenge_json = rpcCall("pendingChallenges")
+        print(challenge_json)
         unlock_keys_list = unlock_json["result"]["unlock_keys"]
         lock_keys = list()
         unlock_keys = list()

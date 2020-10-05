@@ -333,6 +333,7 @@ class App():
         print(s)
         #########
         settlePayKeyInvoice(s)
+        rpcCall("challenge", payment_json2["challenge"])
 
         mbox.showinfo("Result", "Payment settled")
 

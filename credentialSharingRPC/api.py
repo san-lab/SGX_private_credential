@@ -1,5 +1,5 @@
 from jsonrpc import dispatcher
-from storage import pushNewRequest, getPendingRequests, getCredentials, pushNewCredential, pushNewLockKey, pushNewUnlockKey, getLockKeys, getUnlockKeys, pushNewPresentation, getPresentations, getInvoices, pushNewInvoice, getPayments, pushNewPayment
+from storage import pushNewRequest, getPendingRequests, getCredentials, pushNewCredential, pushNewLockKey, pushNewUnlockKey, getLockKeys, getUnlockKeys, pushNewPresentation, getPresentations, getInvoices, pushNewInvoice, getPayments, pushNewPayment, getChallenges, pushNewChallenge
 
 def serviceLookUp():
     return {'type': ' ring signature service', 'curve': 'cosa', 'hashing algortithm': 'keccak'}
@@ -32,6 +32,10 @@ def acceptNewPayment(data):
     pushNewPayment(data)
     return {'message': 'Payment has been sent', 'invoice_number': data["invoiceNumber"]}
 
+def acceptNewChallenge(data):
+    pushNewChallenge(data)
+    return {'message': 'Challenge has been sent', 'invoice_number': data["challenge"]}
+
 def showNewCredentialRequest():
     return getPendingRequests()
 
@@ -53,6 +57,9 @@ def showNewInvoices():
 def showNewPayments():
     return getPayments()
 
+def showNewChallenges():
+    return getChallenges()
+
 dispatcher['serviceLookUp'] = serviceLookUp
 dispatcher['credentialRequest'] = acceptNewCredentialRequest
 dispatcher['credential'] = acceptNewCredential
@@ -61,6 +68,7 @@ dispatcher['lockKey'] = acceptNewLockKey
 dispatcher['unlockKey'] = acceptNewUnlockKey
 dispatcher['invoice'] = acceptNewInvoice
 dispatcher['payment'] = acceptNewPayment
+dispatcher['challenge'] = acceptNewChallenge
 dispatcher['pendingRequests'] = showNewCredentialRequest
 dispatcher['pendingCredentials'] = showNewCredentials
 dispatcher['pendingPresentations'] = showNewPresentations
@@ -68,3 +76,4 @@ dispatcher['pendingLockKeys'] = showNewLockKeys
 dispatcher['pendingUnlockKeys'] = showNewUnlockKeys
 dispatcher['pendingInvoices'] = showNewInvoices
 dispatcher['pendingPayments'] = showNewPayments
+dispatcher['pendingChallenges'] = showNewChallenges
