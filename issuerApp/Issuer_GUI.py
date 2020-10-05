@@ -36,8 +36,8 @@ sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
 from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
-from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair, calculateDiffieHash, test
-from utilities.assetUnlock import settlePayKeyInvoice
+from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair, calculateDiffieHash, getS, test
+from utilities.assetUnlock import settlePayKeyInvoice, checkBalance
 
 class App():
     def __init__(self):
@@ -315,7 +315,8 @@ class App():
         mbox.showinfo("Result", aux_str)
 
     def checkBalance(self):
-        mbox.showinfo("Result", "Your balance is 1")
+        balance = checkBalance()
+        mbox.showinfo("Result", "Your balance is " + str(balance))
 
     def settlePaymentAndCommitKey(self):
         global Payment_list, payment_Selection, payment_menu
@@ -327,12 +328,13 @@ class App():
         payment_json2 = getOne("payments_issuer", "payments", position)
         payment_json = getOne("payments_issuer", "unlock_keys", position)
         test(payment_json["unlockKey"], payment_json["diffieHash"],payment_json2["challenge"])
+
+        s = getS(payment_json["unlockKey"], payment_json["diffieHash"])
+        print(s)
         #########
+        settlePayKeyInvoice(s)
 
-        #settlePayKeyInvoice(payment_json)
-
-
-
+        mbox.showinfo("Result", "Payment settled")
 
 def main():
     App()

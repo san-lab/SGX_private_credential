@@ -10,7 +10,7 @@ import json
 from web3 import Web3
 
 httpAddress = 'https://rinkeby.infura.io/v3/f2a8581c640340758bead17199084148'
-AssetUnlockerContractAddress =  '0xe70dc1c9bc6b3b488f1cbc5f48f6772a47a174e5'
+AssetUnlockerContractAddress =  '0xb35cbb4a4a1d05591766f31f3bc5461bb636b0a5'
 private_key = '0x2659d295cf455bc033e5b5ec59afc67057425af8a71a694a5f59ad0e6b333f0c'
 account_address = '0xc8dfCA661A53bC05EC1BC76d20Ba77C34F8facAb'
 
@@ -54,9 +54,9 @@ def payKeyInvoice(challenge):
     transactionLink = "https://rinkeby.etherscan.io/tx/" + transactionResult['transactionHash'].hex()
     print(transactionLink)
 
-def settlePayKeyInvoice(challenge, solution):
+def settlePayKeyInvoice(s):
     nonceIss = w3.eth.getTransactionCount(account_addressIss)
-    builtTransaction = myContract.functions.unlockAsset(challenge, solution).buildTransaction({
+    builtTransaction = myContract.functions.unlockAsset(s).buildTransaction({
         'chainId': 4,
         'gas': 4600000,
         'gasPrice': w3.toWei('1', 'gwei'),

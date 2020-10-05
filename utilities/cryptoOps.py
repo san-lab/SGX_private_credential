@@ -162,21 +162,9 @@ def calculateDiffieHash(privK, pubkX, pubkY):
 
 
 def test (unlockKey , diffieHash, challenge):
-    print("TEST BUENO BUENO")
     s = int(unlockKey,16) + diffieHash
     print(cv.mul_point(s, g))
     print(challenge) # x coord
 
-# bankPrivateECKey = 8922796882388619604127911146068705796569681654940873967836428543013949233636 % p
-
-# bankPublicECKey = cv.mul_point(bankPrivateECKey, g)
-
-
-# print(len(hex(bankPublicECKey.x)))
-# print(len(hex(bankPublicECKey.y)))
-# print(bankPrivateECKey)
-# print('0' + hex(bankPublicECKey.x)[2:] + '0' + hex(bankPublicECKey.y)[2:])
-
-
-
-# print(bankPublicECKey)
+def getS (unlockKey , diffieHash):
+    return (int(unlockKey,16) + diffieHash) % q
