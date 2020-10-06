@@ -168,6 +168,8 @@ class App():
         reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
         res_json = apiCall("issue3", credential_request)
+        print("ISSUER SIGNATURE BEFORE ENCRYPT")
+        print(res_json["IssuerSignature"])
 
         res_str = json.dumps(res_json)
 
@@ -198,7 +200,7 @@ class App():
 
         data = popOne("credentials_issuer", "plain_credentials", position)
         data_json = json.loads(data)
-        data_json["Issuer public key"] = packedPublicECKey
+        data_json["Issuer public key"] = compressedPublicECKey
         data = json.dumps(data_json)
         plain_credential_list = getAll("credentials_issuer" ,"plain_credentials")
         req_json = apiCall("encryptbn256", data)
