@@ -13,11 +13,11 @@ def reloadOptionMenu(selectionObject, option_menu, list_ids):
         option_menu['menu'].add_command(label=_id, command=_setit(selectionObject, _id))
         count = count+1
 
-def createIdsAndString(list_to_traverse, json_string, field1, field2, link, endingLabel=None, subName=None):
+def createIdsAndString(list_to_traverse, field1, field2, link, endingLabel=None, subName=None):
     aux_str = ""
     usable_ids = list()
     for i in range(0, len(list_to_traverse)):
-        if json_string:
+        if type(list_to_traverse[i]) == str:
             elem = list_to_traverse[i]
             elem_json = json.loads(elem)
         else:

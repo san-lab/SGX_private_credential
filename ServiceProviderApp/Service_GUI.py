@@ -93,7 +93,7 @@ class App():
 
         key_invoice_requests = getAll("invoices_serviceP", "invoices")
         
-        _, usable_ids = createIdsAndString(key_invoice_requests, False, "invoiceNumber", "DID", " for ")
+        _, usable_ids = createIdsAndString(key_invoice_requests, "invoiceNumber", "DID", " for ")
         reloadOptionMenu(keyInvoiceSelection, keyInvoice_menu, usable_ids)
 
         self.loadLists("credentials_serviceP", "encrypted_credentials_withK", "(with key)", preWithKeySelection, preWithKey_menu)
@@ -115,7 +115,7 @@ class App():
 
     def loadLists(self, fileName, subName, sEndingLabel, selection, menu):
         tempList = getAll(fileName, subName)
-        _, usable_ids = createIdsAndString(tempList, False, "Type", "Name", " for ", subName="Credential", endingLabel=sEndingLabel)
+        _, usable_ids = createIdsAndString(tempList, "Type", "Name", " for ", subName="Credential", endingLabel=sEndingLabel)
         reloadOptionMenu(selection, menu, usable_ids)
 
 
@@ -131,7 +131,7 @@ class App():
         list_waiting_presentations = presentations_json["result"]["presentations"]
         complete_list_presentations = getAll("credentials_serviceP", "encrypted_credentials")
 
-        _, usable_ids = createIdsAndString(complete_list_presentations, False, "Type", "Name", " for ", subName="Credential")
+        _, usable_ids = createIdsAndString(complete_list_presentations, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(presentationSelection, presentation_menu, usable_ids)
 
         mbox.showinfo("Result", "User presentations retrieved")

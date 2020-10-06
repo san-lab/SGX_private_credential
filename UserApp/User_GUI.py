@@ -37,8 +37,8 @@ import os
 
 import sys
 sys.path.append('../')
-from dao.dao import getAll, setOne, setMultiple
-from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString, createIdsAndStringSpecialCase
+from dao.dao import getAll, setMultiple
+from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndStringSpecialCase
 from utilities.communicationToRPC import rpcCall
 
 
