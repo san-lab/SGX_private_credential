@@ -299,8 +299,6 @@ class App():
         issuer_signature = plain_credential["IssuerSignature"]
         message = plain_credential["Credential"]["Name"] + plain_credential["Credential"]["DID"] + plain_credential["Credential"]["Type"] + plain_credential["Credential"]["value"] + plain_credential["IssuerDID"]
 
-        print("VERIFY INFO")
-        print(issuer_signature)
         valid = verify(message,issuer_pubK_comp,issuer_signature)
         print(valid)
         if valid:

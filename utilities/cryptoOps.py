@@ -80,7 +80,7 @@ def verify(message, pbkey, signature):
 
 
     si = int.from_bytes(s, "little")
-    S = cvEd.mul_point(si,g)
+    S = cvEd.mul_point(si,gEd)
 
     Rp = cvEd.decode_point(R)
     Pb = cvEd.decode_point(keybytes)
