@@ -95,27 +95,27 @@ class App():
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
-        _, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        _, usable_ids = createIdsAndString(plain_credential_list, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids)
 
         enc_credential_list = getAll("credentials_issuer", "encrypted_credentials")
 
-        _, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        _, usable_ids = createIdsAndString(enc_credential_list, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         reloadOptionMenu(responseSelection, response_menu, usable_ids)
 
         list_waiting_requests = getAll("credentials_request", "request")
         
-        _, usable_ids = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
+        _, usable_ids = createIdsAndString(list_waiting_requests, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
         list_waiting_lock_keys = getAll("lock_keys_issuer", "lock_keys")
         
-        _, usable_ids = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
+        _, usable_ids = createIdsAndString(list_waiting_lock_keys, "key", "DID", " for ")
         reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
         list_payment = getAll("payments_issuer", "payments")
         
-        _, usable_ids = createIdsAndString(list_payment, False, "invoiceNumber", "challenge", " for ")
+        _, usable_ids = createIdsAndString(list_payment, "invoiceNumber", "challenge", " for ")
         reloadOptionMenu(payment_Selection, payment_menu, usable_ids)
 
         root.mainloop()
@@ -143,12 +143,12 @@ class App():
         list_waiting_requests = pendingRequests_json["result"]["request"]
         complete_list_requests = getAll("credentials_request", "request")
 
-        aux_str, _ = createIdsAndString(list_waiting_requests, False, "type", "name", " for ")
+        aux_str, _ = createIdsAndString(list_waiting_requests, "type", "name", " for ")
         if aux_str == "":
             aux_str = "No requests pending"
 
         else:
-            _, usable_ids = createIdsAndString(complete_list_requests, False, "type", "name", " for ")
+            _, usable_ids = createIdsAndString(complete_list_requests, "type", "name", " for ")
             reloadOptionMenu(requestSelection, request_menu, usable_ids)
 
         mbox.showinfo("Result", "Pending requests retrieved")
@@ -164,7 +164,7 @@ class App():
         credential_request = json.dumps(popOne("credentials_request", "request", position))
         list_waiting_req_memory = getAll("credentials_request", "request")
 
-        _, usable_ids_req = createIdsAndString(list_waiting_req_memory, False, "type", "name", " for ")
+        _, usable_ids_req = createIdsAndString(list_waiting_req_memory, "type", "name", " for ")
         reloadOptionMenu(requestSelection, request_menu, usable_ids_req)
 
         res_json = apiCall("issue3", credential_request)
@@ -176,7 +176,7 @@ class App():
         setOne("credentials_issuer", "plain_credentials", res_str)
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
-        aux_str, usable_ids = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        aux_str, usable_ids = createIdsAndString(plain_credential_list, "Type", "Name", " for ", subName="Credential")
         
         if aux_str == "":
             aux_str = "No credentials loaded"
@@ -206,14 +206,14 @@ class App():
         req_json = apiCall("encryptbn256", data)
         req_str = json.dumps(req_json)
 
-        _, usable_ids_plain = createIdsAndString(plain_credential_list, True, "Type", "Name", " for ", subName="Credential")
+        _, usable_ids_plain = createIdsAndString(plain_credential_list, "Type", "Name", " for ", subName="Credential")
         reloadOptionMenu(credentialSelection, credential_menu, usable_ids_plain)
 
         setOne("credentials_issuer", "encrypted_credentials", req_str)
 
         enc_credential_list = getAll("credentials_issuer" ,"encrypted_credentials")
 
-        aux_str, usable_ids = createIdsAndString(enc_credential_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        aux_str, usable_ids = createIdsAndString(enc_credential_list, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         
         if aux_str == "":
             aux_str = "No credentials loaded"
@@ -245,7 +245,7 @@ class App():
         enc_credential = popOne("credentials_issuer", "encrypted_credentials", position)
         enc_cred_list = getAll("credentials_issuer", "encrypted_credentials")
 
-        _, usable_ids_enc = createIdsAndString(enc_cred_list, True, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
+        _, usable_ids_enc = createIdsAndString(enc_cred_list, "Type", "Name", " for ", subName="Credential", endingLabel="(encrypted)")
         reloadOptionMenu(responseSelection, response_menu, usable_ids_enc)
 
         print(enc_credential)
@@ -263,12 +263,12 @@ class App():
         list_waiting_lock_keys = pendingLockKeys_json["result"]["lock_keys"]
         complete_list_lock_keys = getAll("lock_keys_issuer", "lock_keys")
 
-        aux_str, _ = createIdsAndString(list_waiting_lock_keys, False, "key", "DID", " for ")
+        aux_str, _ = createIdsAndString(list_waiting_lock_keys, "key", "DID", " for ")
         if aux_str == "":
             aux_str = "No requests pending"
 
         else:
-            _, usable_ids = createIdsAndString(complete_list_lock_keys, False, "key", "DID", " for ")
+            _, usable_ids = createIdsAndString(complete_list_lock_keys, "key", "DID", " for ")
             reloadOptionMenu(lock_key_Selection, lock_key_menu, usable_ids)
 
         mbox.showinfo("Result", "Unlock keys requests retrieved")
@@ -305,12 +305,12 @@ class App():
         list_waiting_payments = payments_json["result"]["payments"]
         complete_list_payments = getAll("payments_issuer", "payments")
 
-        aux_str, _ = createIdsAndString(list_waiting_payments, False, "challenge", "DID", " for ")
+        aux_str, _ = createIdsAndString(list_waiting_payments, "challenge", "DID", " for ")
         if aux_str == "":
             aux_str = "No requests pending"
 
         else:
-            _, usable_ids = createIdsAndString(complete_list_payments, False, "challenge", "DID", " for ")
+            _, usable_ids = createIdsAndString(complete_list_payments, "challenge", "DID", " for ")
             reloadOptionMenu(payment_Selection, payment_menu, usable_ids)
             aux_str = "Payments retrieved"
 
