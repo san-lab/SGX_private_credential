@@ -1,6 +1,25 @@
 from tkinter import *
 from tkinter import _setit
 import json
+from dao.dao import getAll
+
+def button(tkDialog, bText, bRow, bFunc):
+        b = ttk.Button(
+            tkDialog, text=bText,
+            command=bFunc)
+        b.grid(row=bRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+
+def multipleSelect(tkDialog, sList, sRow):
+        selection = StringVar(tkDialog)
+        selection.set(sList[0]) # default value
+        menu = OptionMenu(tkDialog, selection, *sList)
+        menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
+        return selection, menu
+
+def loadLists(fileName, subName, sEndingLabel, selection, menu):
+        tempList = getAll(fileName, subName)
+        _, usable_ids = createIdsAndString(tempList, "Type", "Name", " for ", subName="Credential", endingLabel=sEndingLabel)
+        reloadOptionMenu(selection, menu, usable_ids)
 
 
 def reloadOptionMenu(selectionObject, option_menu, list_ids):

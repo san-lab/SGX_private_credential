@@ -17,29 +17,26 @@
 # -*- coding: utf-8 -*-
 
 from tkinter import *
-from tkinter import ttk, _setit
 from PIL import ImageTk, Image
-from tkinter.filedialog import askopenfilename, asksaveasfilename
 import json
-import uuid
 import base64
-import time
-import requests
 import binascii
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
 
 from tkinter import messagebox as mbox
-from datetime import datetime
-from dotenv import load_dotenv
 import os
 
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setMultiple
-from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndStringSpecialCase
 from utilities.communicationToRPC import rpcCall
+from utilities.GUI_Utilities import (createIdsAndStringSpecialCase,
+                                     reloadOptionMenu,
+                                     button,
+                                     multipleSelect,
+                                     loadLists)
 
 
 class App():
@@ -77,44 +74,13 @@ class App():
         ttk.Label(
             root, text="Name: Alice      DID: 1234").grid(
                 row=1, sticky='ew', pady=(11, 7), padx=(25,0))
-
-        b1 = ttk.Button(
-            root, text="Synchronize credentials",
-            command=self.syncCredentials)
-        b1.grid(row=2, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        credentialSelection = StringVar(root)
-        credentialSelection.set(Credential_list[0]) # default value
-
-        credential_menu = OptionMenu(root, credentialSelection, *Credential_list)
-        credential_menu.grid(row=3, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b2 = ttk.Button(
-            root, text="View credential info",
-            command=self.check_cred_info)
-        b2.grid(row=4, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        e1 = StringVar(root)
-        e1.set(credentialType_list[0]) # default value
-
-        credTypes_menu = OptionMenu(root, e1, *credentialType_list)
-        credTypes_menu.grid(row=5, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b3 = ttk.Button(
-            root, text="      Ask for a new credential      ",
-            command=self.askNewCredential)
-        b3.grid(row=6, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        presentationSelection = StringVar(root)
-        presentationSelection.set(Presentation_List[0]) # default value
-
-        presentation_menu = OptionMenu(root, presentationSelection, *Presentation_List)
-        presentation_menu.grid(row=7, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-        b4 = ttk.Button(
-            root, text="Send presentation to service provider",
-            command=self.sendToServiceProvider)
-        b4.grid(row=8, sticky='ew', pady=(11, 7), padx=(25, 0))
+        button(root, "Synchronize credentials", 2, self.syncCredentials)
+        credentialSelection, credential_menu = multipleSelect(root, Credential_list, 3)
+        button(root, "View credential info", 4, self.check_cred_info)
+        e1, credTypes_menu = multipleSelect(root, credentialType_list, 5)
+        button(root, "      Ask for a new credential      ", 6, self.askNewCredential)
+        presentationSelection, presentation_menu = multipleSelect(root, Presentation_List, 7)
+        button(root, "Send presentation to service provider", 8, self.sendToServiceProvider)
 
 
         #img_logo = ImageTk.PhotoImage(Image.open(

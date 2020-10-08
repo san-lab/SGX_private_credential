@@ -17,27 +17,23 @@
 # -*- coding: utf-8 -*-
 
 from tkinter import *
-from tkinter import ttk, _setit
+from tkinter import ttk
 from PIL import ImageTk, Image
-from tkinter.filedialog import askopenfilename, asksaveasfilename
 import json
-import uuid
-import base64
-import time
-import requests
 
 from tkinter import messagebox as mbox
-from datetime import datetime
-from dotenv import load_dotenv
-import os
 
 import sys
 sys.path.append('../')
 from dao.dao import getAll, setOne, setMultiple, popOne, getOne
-from utilities.GUI_Utilities import reloadOptionMenu, createIdsAndString
 from utilities.communicationToRPC import rpcCall, apiCall
 from utilities.cryptoOps import calculateSymKey, getCompressedPubFromPriv, getPackedPubFromPriv, calulateUnlockAndMaskedUnlock, createKeyPair, calculateDiffieHash, getS, test
 from utilities.assetUnlock import settlePayKeyInvoice, checkBalance
+from utilities.GUI_Utilities import (createIdsAndString,
+                                     reloadOptionMenu,
+                                     button,
+                                     multipleSelect,
+                                     loadLists)
 
 class App():
     def __init__(self):
@@ -78,20 +74,20 @@ class App():
         ""
         ]
 
-        self.button("Retrieve credential request", 1, self.requestRetrieve)
-        requestSelection, request_menu = self.multipleSelect(Request_list, 2)
-        self.button("Generate credential", 3, self.generateCredential)
-        credentialSelection, credential_menu = self.multipleSelect(Credential_list, 4)
-        self.button("Encrypt credential on SGX", 5, self.encryptOnSgx)
-        responseSelection, response_menu = self.multipleSelect(Response_list, 6)
-        self.button("Send credential to customer", 7, self.sendCredential)
-        self.button("Retrieve unlock request", 8, self.retrieveLockKeys)
-        lock_key_Selection, lock_key_menu = self.multipleSelect(Lock_key_list, 9)
-        self.button("Send key invoice", 10, self.sendInvoice)
-        self.button("Retrieve key payments", 11, self.retrievePayments)
-        payment_Selection, payment_menu = self.multipleSelect(Payment_list, 12)
-        self.button("Claim payment and commit key", 13, self.settlePaymentAndCommitKey)
-        self.button("Check balance", 14, self.checkBalance)
+        button(root, "Retrieve credential request", 1, self.requestRetrieve)
+        requestSelection, request_menu = multipleSelect(root, Request_list, 2)
+        button(root, "Generate credential", 3, self.generateCredential)
+        credentialSelection, credential_menu = multipleSelect(root, Credential_list, 4)
+        button(root, "Encrypt credential on SGX", 5, self.encryptOnSgx)
+        responseSelection, response_menu = multipleSelect(root, Response_list, 6)
+        button(root, "Send credential to customer", 7, self.sendCredential)
+        button(root, "Retrieve unlock request", 8, self.retrieveLockKeys)
+        lock_key_Selection, lock_key_menu = multipleSelect(root, Lock_key_list, 9)
+        button(root, "Send key invoice", 10, self.sendInvoice)
+        button(root, "Retrieve key payments", 11, self.retrievePayments)
+        payment_Selection, payment_menu = multipleSelect(root, Payment_list, 12)
+        button(root, "Claim payment and commit key", 13, self.settlePaymentAndCommitKey)
+        button(root, "Check balance", 14, self.checkBalance)
 
         plain_credential_list = getAll("credentials_issuer", "plain_credentials")
 
@@ -119,19 +115,6 @@ class App():
         reloadOptionMenu(payment_Selection, payment_menu, usable_ids)
 
         root.mainloop()
-
-    def button(self, bText, bRow, bFunc):
-        b = ttk.Button(
-            root, text=bText,
-            command=bFunc)
-        b.grid(row=bRow, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-    def multipleSelect(self, sList, sRow):
-        selection = StringVar(root)
-        selection.set(sList[0]) # default value
-        menu = OptionMenu(root, selection, *sList)
-        menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
-        return selection, menu
 
     def requestRetrieve(self):
         global Request_list, requestSelection, request_menu

@@ -19,20 +19,12 @@
 import base64
 import binascii
 import json
-import os
 import sys
-import time
-import uuid
-from datetime import datetime
 from tkinter import *
-from tkinter import _setit
 from tkinter import messagebox as mbox
 from tkinter import ttk
-from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 import Padding
-import requests
-from dotenv import load_dotenv
 from PIL import Image, ImageTk
 
 sys.path.append('../')
@@ -41,7 +33,10 @@ from utilities.communicationToRPC import apiCall, rpcCall
 from utilities.cryptoOps import createKeyPair, decrypt, verify, calculateChallenge, calculateDiffieHash
 from utilities.GUI_Utilities import (createIdsAndString,
                                      createIdsAndStringSpecialCase,
-                                     reloadOptionMenu)
+                                     reloadOptionMenu,
+                                     button,
+                                     multipleSelect,
+                                     loadLists)
 from utilities.assetUnlock import payKeyInvoice, getKeyFromBlockchain
 
 
@@ -75,48 +70,30 @@ class App():
         ""
         ]
 
-        self.button("Retrieve user presentations", 1, self.retrieveUserCredentials)
-        presentationSelection, presentation_menu = self.multipleSelect(Presentation_list, 2)
-        self.button("View encrypted presentation info", 3, self.checkInfoEnc)
-        self.button("Ask for unlock key", 4, self.askUnlockKey)
-        self.button("Retrieve key invoices", 5, self.retrieveKeyInvoices)
-        keyInvoiceSelection, keyInvoice_menu = self.multipleSelect(KeyInvoice_list, 6)
-        self.button("Pay key invoice", 7, self.payInvoice)
-        self.button("Retrieve pending unlock keys", 8, self.retrievePendingUnlock)       
-        preWithKeySelection, preWithKey_menu = self.multipleSelect(PreWithKey_list, 9)
-        self.button("Decrypt presentation", 10, self.decryptPresent) 
-        plainSelection, plain_menu = self.multipleSelect(Plain_list, 11)
-        self.button("View plain presentation info", 12, self.checkInfoPlain) 
-        self.button("Validate signature", 13, self.validateSignature)
+        button(root, "Retrieve user presentations", 1, self.retrieveUserCredentials)
+        presentationSelection, presentation_menu = multipleSelect(root, Presentation_list, 2)
+        button(root, "View encrypted presentation info", 3, self.checkInfoEnc)
+        button(root, "Ask for unlock key", 4, self.askUnlockKey)
+        button(root, "Retrieve key invoices", 5, self.retrieveKeyInvoices)
+        keyInvoiceSelection, keyInvoice_menu = multipleSelect(root, KeyInvoice_list, 6)
+        button(root, "Pay key invoice", 7, self.payInvoice)
+        button(root, "Retrieve pending unlock keys", 8, self.retrievePendingUnlock)       
+        preWithKeySelection, preWithKey_menu = multipleSelect(root, PreWithKey_list, 9)
+        button(root, "Decrypt presentation", 10, self.decryptPresent) 
+        plainSelection, plain_menu = multipleSelect(root, Plain_list, 11)
+        button(root, "View plain presentation info", 12, self.checkInfoPlain) 
+        button(root, "Validate signature", 13, self.validateSignature)
 
-        self.loadLists("credentials_serviceP", "encrypted_credentials", None, presentationSelection, presentation_menu)
+        loadLists("credentials_serviceP", "encrypted_credentials", None, presentationSelection, presentation_menu)
 
         key_invoice_requests = getAll("invoices_serviceP", "invoices")
         
         _, usable_ids = createIdsAndString(key_invoice_requests, "invoiceNumber", "DID", " for ")
         reloadOptionMenu(keyInvoiceSelection, keyInvoice_menu, usable_ids)
 
-        self.loadLists("credentials_serviceP", "encrypted_credentials_withK", "(with key)", preWithKeySelection, preWithKey_menu)
-        self.loadLists("credentials_serviceP", "plain_credentials", "(decrypted)", plainSelection, plain_menu)
+        loadLists("credentials_serviceP", "encrypted_credentials_withK", "(with key)", preWithKeySelection, preWithKey_menu)
+        loadLists("credentials_serviceP", "plain_credentials", "(decrypted)", plainSelection, plain_menu)
         root.mainloop()
-
-    def button(self, bText, bRow, bFunc):
-        b = ttk.Button(
-            root, text=bText,
-            command=bFunc)
-        b.grid(row=bRow, sticky='ew', pady=(11, 7), padx=(25, 0))
-
-    def multipleSelect(self, sList, sRow):
-        selection = StringVar(root)
-        selection.set(sList[0]) # default value
-        menu = OptionMenu(root, selection, *sList)
-        menu.grid(row=sRow, sticky='ew', pady=(11, 7), padx=(25, 0))
-        return selection, menu
-
-    def loadLists(self, fileName, subName, sEndingLabel, selection, menu):
-        tempList = getAll(fileName, subName)
-        _, usable_ids = createIdsAndString(tempList, "Type", "Name", " for ", subName="Credential", endingLabel=sEndingLabel)
-        reloadOptionMenu(selection, menu, usable_ids)
 
 
 
