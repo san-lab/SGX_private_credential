@@ -102,7 +102,8 @@ class App():
         ServiceLogic.askUnlockKey(presentationSelection, presentation_menu)
 
     def retrieveKeyInvoices(self):
-        ServiceLogic.retrieveKeyInvoices()
+        global keyInvoiceSelection, keyInvoice_menu
+        ServiceLogic.retrieveKeyInvoices(keyInvoiceSelection, keyInvoice_menu)
 
     def payInvoice(self):
         global keyInvoiceSelection

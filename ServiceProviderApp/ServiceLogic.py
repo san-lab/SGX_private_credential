@@ -64,14 +64,14 @@ def askUnlockKey(presentationSelection, presentation_menu):
 
     mbox.showinfo("Result", "Unlock key request sent")
 
-def retrieveKeyInvoices():
+def retrieveKeyInvoices(keyInvoiceSelection, keyInvoice_menu):
     invoices_json = rpcCall("pendingInvoices")
 
     setMultiple("invoices_serviceP", "invoices", invoices_json["result"]["invoices"]) 
 
     complete_list_invoices = getAll("invoices_serviceP", "invoices")
 
-    _, usable_ids = createIdsAndString(complete_list_invoices, False, "invoiceNumber", "DID", " for ")
+    _, usable_ids = createIdsAndString(complete_list_invoices, "invoiceNumber", "DID", " for ")
     reloadOptionMenu(keyInvoiceSelection, keyInvoice_menu, usable_ids)
 
     print(invoices_json)
@@ -120,7 +120,7 @@ def retrievePendingUnlock(preWithKeySelection, preWithKey_menu):
 
     complete_list_withUnlock = getAll("credentials_serviceP", "encrypted_credentials_withK")
 
-    _, usable_ids = createIdsAndString(complete_list_withUnlock, False, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
+    _, usable_ids = createIdsAndString(complete_list_withUnlock, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
     reloadOptionMenu(preWithKeySelection, preWithKey_menu, usable_ids)
     
     mbox.showinfo("Result", "Unlock keys syncronized")
@@ -145,12 +145,12 @@ def decryptPresent(preWithKeySelection, preWithKey_menu,plainSelection, plain_me
     setOne("credentials_serviceP","plain_credentials", enc_credential_withK)
     
     plain_credentials_list = getAll("credentials_serviceP","plain_credentials")
-    _, usable_ids = createIdsAndString(plain_credentials_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(plain)")
+    _, usable_ids = createIdsAndString(plain_credentials_list, "Type", "Name", " for ", subName="Credential", endingLabel="(plain)")
     reloadOptionMenu(plainSelection, plain_menu, usable_ids)
 
     enc_credentia_withK_list = getAll("credentials_serviceP", "encrypted_credentials_withK")
 
-    _, usable_ids = createIdsAndString(enc_credentia_withK_list, False, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
+    _, usable_ids = createIdsAndString(enc_credentia_withK_list, "Type", "Name", " for ", subName="Credential", endingLabel="(with key)")
     reloadOptionMenu(preWithKeySelection, preWithKey_menu, usable_ids)
 
     mbox.showinfo("Result", "Presentation decrypted")
