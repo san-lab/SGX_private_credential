@@ -38,12 +38,12 @@ from utilities.GUI_Utilities import (createIdsAndString,
 class App():
     def __init__(self):
         global root
-        global Credential_list, credentialSelection, credential_menu
-        global Request_list, requestSelection, request_menu
-        global Response_list, responseSelection, response_menu
-        global Lock_key_list, lock_key_Selection, lock_key_menu
-        global Payment_list, payment_Selection, payment_menu
-        global bankPrivateECKey, compressedPublicECKey, packedPublicECKey
+        global credentialSelection, credential_menu
+        global requestSelection, request_menu
+        global responseSelection, response_menu
+        global lock_key_Selection, lock_key_menu
+        global payment_Selection, payment_menu
+        global bankPrivateECKey, compressedPublicECKey
 
         root = Tk()
         root.geometry('330x600')
@@ -117,7 +117,7 @@ class App():
         root.mainloop()
 
     def requestRetrieve(self):
-        global Request_list, requestSelection, request_menu
+        global requestSelection, request_menu
 
         pendingRequests_json = rpcCall("pendingRequests")
 
@@ -138,8 +138,8 @@ class App():
 
     def generateCredential(self):
         global plain_credential_list
-        global Credential_list, credentialSelection, credential_menu
-        global Request_list, requestSelection, request_menu
+        global credentialSelection, credential_menu
+        global requestSelection, request_menu
 
         requestPosition = requestSelection.get()
         position = int(requestPosition.split(':')[0])
@@ -175,8 +175,8 @@ class App():
         mbox.showinfo("Result", json.dumps(res_json, indent=4))
 
     def encryptOnSgx(self):
-        global Response_list, responseSelection, response_menu
-        global Credential_list, credentialSelection, credential_menu
+        global responseSelection, response_menu
+        global credentialSelection, credential_menu
 
         credentialPosition = credentialSelection.get()
         position = int(credentialPosition.split(':')[0])
@@ -220,7 +220,7 @@ class App():
         mbox.showinfo("Result", json.dumps(req_json, indent=4))
 
     def sendCredential(self):
-        global Response_list, responseSelection, response_menu
+        global responseSelection, response_menu
 
         enc_credentialPosition = responseSelection.get()
         position = int(enc_credentialPosition.split(':')[0])
@@ -304,7 +304,7 @@ class App():
         mbox.showinfo("Result", "Your balance is " + str(balance))
 
     def settlePaymentAndCommitKey(self):
-        global Payment_list, payment_Selection, payment_menu
+        global payment_Selection, payment_menu
 
         payment_Position = payment_Selection.get()
         position = int(payment_Position.split(':')[0])

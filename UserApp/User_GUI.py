@@ -17,6 +17,7 @@
 # -*- coding: utf-8 -*-
 
 from tkinter import *
+from tkinter import ttk
 from PIL import ImageTk, Image
 import json
 import base64
@@ -42,8 +43,8 @@ from utilities.GUI_Utilities import (createIdsAndStringSpecialCase,
 class App():
     def __init__(self):
         global root
-        global Credential_list, credentialSelection, credential_menu
-        global Presentation_List, presentationSelection, presentation_menu
+        global credentialSelection, credential_menu
+        global presentationSelection, presentation_menu
         global e1
         global memory_credential_list
         global ClientRSAkeyPair
@@ -77,7 +78,7 @@ class App():
         button(root, "Synchronize credentials", 2, self.syncCredentials)
         credentialSelection, credential_menu = multipleSelect(root, Credential_list, 3)
         button(root, "View credential info", 4, self.check_cred_info)
-        e1, credTypes_menu = multipleSelect(root, credentialType_list, 5)
+        credTypesSelection, credTypes_menu = multipleSelect(root, credentialType_list, 5)
         button(root, "      Ask for a new credential      ", 6, self.askNewCredential)
         presentationSelection, presentation_menu = multipleSelect(root, Presentation_List, 7)
         button(root, "Send presentation to service provider", 8, self.sendToServiceProvider)
@@ -157,15 +158,15 @@ class App():
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
         
     def askNewCredential(self):
-        global e1
+        global credTypesSelection
 
-        pendingRequests_json = rpcCall("credentialRequest", {"name": "Alice", "type": e1.get(), "DID": "1234"})
+        pendingRequests_json = rpcCall("credentialRequest", {"name": "Alice", "type": credTypesSelection.get(), "DID": "1234"})
         print(pendingRequests_json)
 
         mbox.showinfo("Result", "Credential request sent")
 
     def sendToServiceProvider(self):
-        global Presentation_List, presentationSelection, presentation_menu
+        global presentationSelection
 
         credential_list = getAll("credentials_saved", "credentials")
 

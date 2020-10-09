@@ -43,10 +43,10 @@ from utilities.assetUnlock import payKeyInvoice, getKeyFromBlockchain
 class App():
     def __init__(self):
         global root
-        global Presentation_List, presentationSelection, presentation_menu
-        global PreWithKey_list, preWithKeySelection, preWithKey_menu
-        global KeyInvoice_list, keyInvoiceSelection, keyInvoice_menu
-        global Plain_list, plainSelection, plain_menu
+        global presentationSelection, presentation_menu
+        global preWithKeySelection, preWithKey_menu
+        global keyInvoiceSelection, keyInvoice_menu
+        global plainSelection, plain_menu
         global cv, g,p,q
 
         root = Tk()
@@ -98,7 +98,7 @@ class App():
 
 
     def retrieveUserCredentials(self):
-        global Presentation_List, presentationSelection, presentation_menu
+        global presentationSelection, presentation_menu
 
         presentations_json = rpcCall("pendingPresentations")
         print(presentations_json)
@@ -134,7 +134,7 @@ class App():
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def askUnlockKey(self):
-        global Presentation_List, presentationSelection, presentation_menu
+        global presentationSelection, presentation_menu
 
         presentationPosition = presentationSelection.get()
         position = int(presentationPosition.split(':')[0])
@@ -180,7 +180,7 @@ class App():
         mbox.showinfo("Result", "Invoice payed:" + json.dumps(parsed, indent=4))
 
     def retrievePendingUnlock(self):
-        global PreWithKey_list, preWithKeySelection, preWithKey_menu
+        global preWithKeySelection, preWithKey_menu
 
         challenges_json = rpcCall("pendingChallenges")
         diffieHashes_json = getAll("invoices_serviceP", "diffieHashes")
@@ -212,8 +212,8 @@ class App():
         mbox.showinfo("Result", "Unlock keys syncronized") #Revisar
 
     def decryptPresent(self):
-        global PreWithKey_list, preWithKeySelection, preWithKey_menu
-        global Plain_list, plainSelection, plain_menu
+        global preWithKeySelection, preWithKey_menu
+        global plainSelection, plain_menu
 
         preWithKPosition = preWithKeySelection.get()
         position = int(preWithKPosition.split(':')[0])
@@ -265,7 +265,7 @@ class App():
         mbox.showinfo("Result", json.dumps(parsed, indent=4))
 
     def validateSignature(self):
-        global Plain_list, plainSelection, plain_menu
+        global plainSelection, plain_menu
 
         plainKPosition = plainSelection.get()
         position = int(plainKPosition.split(':')[0])
